@@ -1,0 +1,10 @@
+*.lst
+*.bin
+*.com
+*.swp
+gentga
+gencga
+*.o
+gensinlut
+cgarows
+tgarows
