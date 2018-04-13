@@ -35,6 +35,13 @@ start:
 	call lang_select
 
 	call setupVRAMpointer
+
+	; Initialize mouse if enabled, otherwise does nothing.
+	enable_mouse_mode
+	call zapperInit
+
+	; This one is just a rectangle that will
+	; not be "targettable"
 %define TEST_TARGET_WIDTH	30
 %define TEST_TARGET_HEIGHT	30
 	mov ax, 160-TEST_TARGET_WIDTH/2
@@ -44,6 +51,8 @@ start:
 	mov byte [draw_color], 15
 	call fillRect
 
+	; Draw the real targetable square
+	call restoreTargets
 
 mainloop:
 	call waitVertRetrace
@@ -54,19 +63,48 @@ mainloop:
 	jmp mainloop
 
 trigger_pulled:
-
+	call eraseTargets ; Draw black over target
 	call detectLight
-	jc .detected
-
-.not_detected:
-	printxy 0,0,"              "
-	call waitTriggerReleased
-	jmp mainloop
+	jnz .miss ; No light should be detected unless a non-target object was pointed
+	call highlightTargets ; Draw white over target
+	call detectLight
+	jz .miss ; Light should be seen unless the zapper is pointing to a black area
 
 .detected:
 	printxy 0,0,"Detected!"
+	jmp .done
+
+.miss:
+	printxy 0,0,"miss      "
+
+.done:
+	call restoreTargets
 	call waitTriggerReleased
 	jmp mainloop
+
+
+eraseTargets:
+	mov ax, 80-TEST_TARGET_WIDTH/2
+	mov bx, 50-TEST_TARGET_HEIGHT/2
+	mov cx, TEST_TARGET_WIDTH
+	mov dx, TEST_TARGET_HEIGHT
+	mov byte [draw_color], 0
+	call fillRect
+	ret
+
+highlightTargets:
+	mov ax, 80-TEST_TARGET_WIDTH/2
+	mov bx, 50-TEST_TARGET_HEIGHT/2
+	mov cx, TEST_TARGET_WIDTH
+	mov dx, TEST_TARGET_HEIGHT
+	mov byte [draw_color], 15
+	call fillRect
+	ret
+
+restoreTargets:
+	jmp highlightTargets
+
+
 
 
 ; Restore original video mode,
