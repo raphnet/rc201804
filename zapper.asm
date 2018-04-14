@@ -52,6 +52,11 @@ mousemode: db 0
 
 section .bss
 
+; Counts how many cycles until light started being seen
+zapper_last_start: resw 1
+; Counts for how many cycles light was seen
+zapper_last_count: resw 1
+
 section .text
 
 zapperInit:
@@ -83,6 +88,33 @@ waitTriggerReleased:
 	jmp_if_trigger_pulled waitTriggerReleased
 	ret
 
+zapperComputeRealY:
+	push ax
+	push cx
+	push dx
+
+	; Make sure [zapper_last_count] is non-zero
+	xor bx,bx ; Return value in case [zapper_last_count] is zero
+	mov ax, [zapper_last_count]
+	and ax,ax
+	jz .bad_last_count
+
+	;
+	; Y = [zapper_last_start] * 200 / [zapper_last_count]
+	;
+	mov ax, [zapper_last_start]
+	mov dx, 200
+	mul dx ; AX:DX = AX * 200
+	div word [zapper_last_count] ; AX:DX = AX:DX / [zapper_last_count]
+
+	mov bx, ax ; Return Y value in BX
+
+.bad_last_count:
+	pop dx
+	pop cx
+	pop ax
+	ret
+
 	; Monitor the light input for a complete video frame
 	; Exits during the next retrace period
 	; ZF set if no light was detected.
@@ -98,7 +130,10 @@ detectLight:
 	push cx
 	push dx
 
-	xor bl,bl ; Use bl to remember if light was seen
+	mov word [zapper_last_start], 0
+	mov word [zapper_last_count], 0
+
+	xor bx, bx ; Use bl to remember if light was seen, bh to detect changes
 	mov cl, LIGHT_BIT ; mask to check light input bit
 	mov ch, 08h ; mask to check vertical retrace
 
@@ -111,11 +146,20 @@ detectLight:
 	jnz .loop_frame ; still in retrace
 
 .loop_frame:
+	inc word [zapper_last_count]
 	; Check for light detection (active high)
 	mov dx, JOYSTICK_PORT
 	in al, dx
 	and al, cl
+	jz .not_rising_edge ; No light seen
 	or bl, al ; Remember light seen
+
+	cmp bh, bl
+	je .not_rising_edge
+	mov dx, [zapper_last_count]
+	mov [zapper_last_start], dx
+	mov bh, bl
+.not_rising_edge:
 
 	; Stop once vertical retrace starts again
 	mov dx, 3DAh
