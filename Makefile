@@ -8,7 +8,7 @@ GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA))
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
 tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_common.asm
 
-all: zapdemo1.com
+all: zapdemo1.com zapdemo2.com
 
 
 ### Executables
@@ -17,9 +17,16 @@ zapdemo1.com: zapdemo1.asm zapper.asm gameloop.asm zapdemo1.asm random.asm $(tga
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 
+zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
+	$(NASM) $< -fbin -o $@ -l $@.lst
+	ls -l $@
+
 ### Test, deployment and housekeeping
 
 run: zapdemo1.com
+	dosbox -noautoexec -conf tga.dosbox.conf $<
+
+run2: zapdemo2.com
 	dosbox -noautoexec -conf tga.dosbox.conf $<
 
 release:
