@@ -26,38 +26,38 @@ eff_colorfade:
 	push cx
 	push dx
 
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
 
 	; Clear half of the intensity bits
 	mov bx, 0x7F7F
 	mov dx, 0xF7F7
 	call eff_andpixels
 
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
 
 	; Clear the other intensity bits
 	mov bx, 0x7777
 	mov dx, 0x7777
 	call eff_andpixels
 
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
 
 	; Checkboard
 	call eff_checkboard
 
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
 
 	; clearScreen could be called, if only the height
 	; could be specified.
@@ -65,10 +65,10 @@ eff_colorfade:
 	mov dx, bx
 	call eff_andpixels
 
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
-	call waitVertRetraceNoAnim
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
+	call waitVertRetrace
 
 	pop dx
 	pop cx

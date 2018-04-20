@@ -1068,8 +1068,6 @@ waitIfNotVertRetrace:
 	jmp _notInRetrace
 
 waitVertRetrace:
-	call runAnimations
-waitVertRetraceNoAnim:
 	test byte [skip_vert_retrace], 0FFh
 	jnz _skip_vert_retrace
 ;	ret
@@ -1115,8 +1113,6 @@ waitIfNotVertRetrace:
 ;;;; waitretrace
 ; es-di
 waitVertRetrace:
-	call runAnimations
-waitVertRetraceNoAnim:
 	test byte [skip_vert_retrace], 0FFh
 	jnz _skip_vert_retrace
 ;	ret
