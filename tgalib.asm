@@ -1,4 +1,4 @@
-; A quick and dirty library for CGA Low-res mode
+; Based on a quick and dirty library for CGA Low-res mode
 ; By Raphaël Assénat, started May 2016
 ;
 ;
@@ -11,6 +11,26 @@
 
 %define get16x16TileID(label)	((label-first16x16_tile)/(4*32))
 %define effect_height(h)	((h) * 250 / 200);  TODO
+
+; Macro to include a resource file. Argument: Resource name. (unquoted)
+;
+; A label matching the resource name prefixed by res_ will be created.
+; The resource will be included using incbin.
+; The full filename will be res_tga/name.tga
+;
+; i.e:
+;   inc_resource droplet
+; would include:
+;	res_tga/droplet.tga
+; and the label would be:
+; res_droplet:
+%macro inc_resource 1
+res_%1:
+%defstr namestr %1
+%strcat base "res_tga/" namestr ; Build left part of path
+%strcat filename base ".tga"
+incbin filename
+%endmacro
 
 section .text
 

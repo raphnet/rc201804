@@ -1,3 +1,6 @@
+%ifndef _ZAPPER_ASM
+%define _ZAPPER_ASM
+
 org 100h
 bits 16
 cpu 8086
@@ -9,7 +12,8 @@ jmp start
 ;;;; Includes
 %include 'tgalib.asm'
 %include 'random.asm'
-%include 'zapper.asm'
+%define ZAPPER_SUPPORT
+%include 'gameloop.asm'
 
 section .bss
 
@@ -19,9 +23,16 @@ section .data
 ; for instance: get16x16TileID (macro) or getTile16 (function)
 first32x32_tile:
 first16x16_tile:
+	inc_resource droplet1
+	inc_resource droplet2
+
 first8x8_tile:
 
 teststr: db 'Hello',0
+
+section .bss
+
+fnptr_blit1: resw 1
 
 section .text
 
@@ -36,9 +47,6 @@ start:
 
 	call setupVRAMpointer
 
-	; Initialize mouse if enabled, otherwise does nothing.
-	enable_mouse_mode
-	call zapperInit
 
 	; This one is just a rectangle that will
 	; not be "targettable"
@@ -54,34 +62,31 @@ start:
 	; Draw the real targetable square
 	call restoreTargets
 
-mainloop:
-	call waitVertRetrace
-	call checkESCpressed
-	jc exit
+	call glp_init ; Init gameloop
 
-	jmp_if_trigger_pulled trigger_pulled
-	jmp mainloop
+	call glp_clearHooks
+	glp_setHook(glp_hook_esc, glp_end)
+	glp_setHook(glp_hook_trigger_pulled, onTriggerPulled)
 
-trigger_pulled:
+	; Run the gameloop
+	call glp_run
+	jmp exit
+
+onTriggerPulled:
 	call eraseTargets ; Draw black over target
 	call detectLight
 	jnz .miss ; No light should be detected unless a non-target object was pointed
 	call highlightTargets ; Draw white over target
 	call detectLight
 	jz .miss ; Light should be seen unless the zapper is pointing to a black area
-
 .detected:
 	printxy 0,0,"Detected!"
 	jmp .done
-
 .miss:
 	printxy 0,0,"miss      "
-
 .done:
 	call restoreTargets
-	call waitTriggerReleased
-	jmp mainloop
-
+	ret
 
 eraseTargets:
 	mov ax, 80-TEST_TARGET_WIDTH/2
@@ -117,3 +122,4 @@ exit:
 	mov al,00 ; Return 0
 	int 21h
 
+%endif ; _ZAPPER_ASM
