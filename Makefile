@@ -13,7 +13,7 @@ all: zapdemo1.com
 
 ### Executables
 
-zapdemo1.com: zapdemo1.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
+zapdemo1.com: zapdemo1.asm zapper.asm gameloop.asm zapdemo1.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 

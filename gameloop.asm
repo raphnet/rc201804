@@ -1,0 +1,91 @@
+bits 16
+cpu 8086
+
+; Should be defined before inclusion or from command-line.
+;%define ZAPPER_SUPPORT
+
+%ifdef ZAPPER_SUPPORT
+%include "zapper.asm"
+%endif
+
+%define glp_setHook(symbol, function) mov word [symbol], function
+
+section .bss
+
+glp_mustrun: resb 1
+
+_first_hook:
+glp_hook_esc: resw 1
+glp_hook_trigger_pulled: resw 1
+glp_hook_vert_retrace: resw 1
+_last_hook:
+
+section .data
+
+section .text
+
+
+	;;;;; Reset all hooks to default noop values
+glp_clearHooks:
+	push bx
+	push cx
+	mov word cx, (_last_hook - _first_hook)/2
+	mov bx, glp_hook_esc
+.lp:
+	mov word [bx], gameloop_noop
+	add bx, 2
+	loop .lp
+	pop cx
+	pop bx
+	ret
+
+
+	;;;;; Call once to initialize the game loop
+	;
+	; Clears hooks
+	;
+glp_init:
+	; Initialize mouse if enabled, otherwise does nothing.
+	enable_mouse_mode
+	call zapperInit
+	call glp_clearHooks
+	ret
+
+
+	;;;;; Call from any hook to request exit from gameloop
+glp_end:
+	mov byte [glp_mustrun], 0
+	ret
+
+
+	;;;;; Run the gameloop until glp_end is called
+glp_run:
+	mov byte [glp_mustrun], 1
+.loop:
+	call waitVertRetrace
+
+%ifdef ZAPPER_SUPPORT
+	jmp_if_trigger_pulled .pulled
+	jmp .not_pulled
+.pulled:
+	call [glp_hook_trigger_pulled]
+.not_pulled:
+%endif
+
+	; Call ESC pressed hook
+	call checkESCpressed
+	jnc .esc_not_pressed
+	call [glp_hook_esc]
+.esc_not_pressed:
+
+	call [glp_hook_vert_retrace]
+
+	cmp byte [glp_mustrun], 1
+	je .loop
+
+	ret
+
+; Do nothing placeholder for unused hooks
+gameloop_noop:
+	ret
+
