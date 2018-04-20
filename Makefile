@@ -8,7 +8,7 @@ GFX_TGA=$(patsubst tga_graphics/%.png,restga/%.tga,$(GRAPHICS_TGA))
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res/cgarows.bin cgalib_effects.asm res/cgafont.bin videolib_common.asm
 tgalib=tgalib.asm res/tgarows.bin res/tgafont.bin tgalib_effects.asm videolib_common.asm
 
-all: zapdemo1.com zapdemo2.com
+all: zapdemo1.com zapdemo2.com vgazap1.com
 
 
 ### Executables
@@ -21,6 +21,11 @@ zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
+vgazap1.com: vgazap1.asm vgalib.asm
+	$(NASM) $< -fbin -o $@ -l $@.lst
+	ls -l $@
+
+
 ### Test, deployment and housekeeping
 
 run: zapdemo1.com
@@ -28,6 +33,10 @@ run: zapdemo1.com
 
 run2: zapdemo2.com
 	dosbox -noautoexec -conf tga.dosbox.conf $<
+
+runv1: vgazap1.com vgalib.asm
+	dosbox -noautoexec -conf vga.dosbox.conf $<
+
 
 release:
 
