@@ -22,13 +22,6 @@ vgarows:
 
 section .text
 
-%macro shift_div_8 1
-; On later CPUs, this could be replaced by shr %1, 3
-	shr %1, 1
-	shr %1, 1
-	shr %1, 1
-%endmacro
-
 %macro setMapMask 1
 	mov dx, 0x3c4
 	mov ah, %1
