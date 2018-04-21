@@ -3,6 +3,22 @@
 
 section .text
 
+%macro shift_div_8 1
+; On later CPUs, this could be replaced by shr %1, 3
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+%endmacro
+
+%macro shift_div_16 1
+; On later CPUs, this could be replaced by shr %1, 4
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+%endmacro
+
+
 ; Perform an indirect call if the destination is not null
 ;
 ; call_if_not_null [address]
