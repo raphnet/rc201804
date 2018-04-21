@@ -259,6 +259,7 @@ fillRect:
 	push cx
 	push dx
 	push di
+	push bp
 
 	; Get row pointer
 	mov di, bx
@@ -301,6 +302,7 @@ _fr_adv:
 	jmp _fr_next_row
 
 _fr_done:
+	pop bp
 	pop di
 	pop dx
 	pop cx
