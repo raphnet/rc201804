@@ -36,7 +36,7 @@ section .text
 	out dx, ax
 %endmacro
 
-%macro draw_color_to_vram
+%macro draw_color_to_vram 0
 setMapMask 0x1 ; Blue
 	mov al, [draw_color] ; Load color argument in al
 	and al, 1  ; Mask blue

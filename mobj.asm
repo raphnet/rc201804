@@ -46,7 +46,7 @@ ENDSTRUC
 
 ; Continue loop if there are still unprocessed list items;
 ; Use with MOBJ_FOREACH
-%macro MOBJ_NEXT
+%macro MOBJ_NEXT 0
 	add bp, mobj.size
 	loop .mobj_foreach_lp
 %endmacro
