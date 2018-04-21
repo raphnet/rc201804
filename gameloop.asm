@@ -62,7 +62,22 @@ glp_end:
 glp_run:
 	mov byte [glp_mustrun], 1
 .loop:
-	call waitVertRetrace
+
+	mov dx, 3DAh
+	mov ah, 08h
+	; If already in vertical retrace (fast computer or slow game code)
+	; wait until retrace ends. Then wait until it starts again
+	; to continue;
+.waitNotInRetrace:
+	in al, dx
+	test al,ah
+	jnz .waitNotInRetrace
+
+	; Wait for retrace start
+.notInRetrace:
+	in al, dx
+	test al,ah
+	jz .notInRetrace
 
 %ifdef ZAPPER_SUPPORT
 	jmp_if_trigger_pulled .pulled
@@ -72,13 +87,14 @@ glp_run:
 .not_pulled:
 %endif
 
+	call [glp_hook_vert_retrace]
+
 	; Call ESC pressed hook
 	call checkESCpressed
 	jnc .esc_not_pressed
 	call [glp_hook_esc]
 .esc_not_pressed:
 
-	call [glp_hook_vert_retrace]
 
 	cmp byte [glp_mustrun], 1
 	je .loop

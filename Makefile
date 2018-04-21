@@ -26,7 +26,7 @@ vgazap1.com: vgazap1.asm vgalib.asm
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst
+	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 
 

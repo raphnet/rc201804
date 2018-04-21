@@ -143,7 +143,7 @@ detectLight:
 .loop_wait_retrace_end:
 	in al, dx
 	test al, ch
-	jnz .loop_frame ; still in retrace
+	jnz .loop_wait_retrace_end ; still in retrace
 
 .loop_frame:
 	inc word [zapper_last_count]
@@ -186,6 +186,17 @@ detectLightMouse:
 	push cx
 	push dx
 
+	mov ch, 08h ; mask to check vertical retrace
+
+	; Wait until retrace ends first. Otherwise the next
+	; loop would exit right away.
+	mov dx, 3DAh
+.loop_wait_retrace_end:
+	in al, dx
+	test al, ch
+	jnz .loop_wait_retrace_end ; still in retrace
+
+
 %ifdef VISIBLE_MOUSE
 	mov ax, 0x0002 ; hide mouse cursor
 	int 33h
@@ -206,15 +217,24 @@ detectLightMouse:
 	mov ax, cx
 	mov bx, dx
 	call getPixel
-
 	; Returns the pixel color in DL, setting the zero flag if color is 0.
 	; Perfect!
-%ifdef VISIBLE_MOUSE
 	pushf
+
+%ifdef VISIBLE_MOUSE
 	mov ax, 0x0001 ; show mouse cursor
 	int 33h
-	popf
 %endif
+
+	; Stop once vertical retrace starts again
+	mov ch, 08h
+	mov dx, 3DAh
+.waitRetraceStart:
+	in al, dx
+	test al, ch
+	jz .waitRetraceStart ; not in retrace yet
+
+	popf
 
 	pop dx
 	pop cx

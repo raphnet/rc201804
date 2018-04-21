@@ -2,6 +2,8 @@ org 100h
 bits 16
 cpu 8086
 
+%define MAX_DROPS	1
+
 ;;;; Make sure to jump to main first before includes
 section .text
 jmp start
@@ -24,6 +26,9 @@ first16x16_tile:
 	inc_resource droplet1
 	inc_resource droplet2
 
+	black_tile: times (16*16*2) db 0
+	white_tile: times (16*16*2) db 0xff
+
 first8x8_tile:
 
 teststr: db 'Hello',0
@@ -32,11 +37,11 @@ section .bss
 
 MOBJ_LIST_START droplets
 ;mobjarray_start:
-DECLARE_MOBJ(drop1)
-DECLARE_MOBJ(drop2)
-DECLARE_MOBJ(drop3)
-DECLARE_MOBJ(drop4)
-DECLARE_MOBJ(drop5)
+%assign id 1
+%rep MAX_DROPS
+DECLARE_MOBJ(drop%+id)
+%assign id id+1
+%endrep
 ;mobjarray_end:
 MOBJ_LIST_END droplets
 
@@ -76,12 +81,16 @@ onTriggerPulled:
 	jnz .miss ; No light should be detected unless a non-target object was pointed
 	call highlightTargets ; Draw white over target
 	call detectLight
-	jz .miss ; Light should be seen unless the zapper is pointing to a black area
+	jz .miss2 ; Light should be seen unless the zapper is pointing to a black area
 .detected:
 	printxy 0,0,"Detected!"
 	jmp .done
 .miss:
 	printxy 0,0,"miss      "
+	jmp .done
+.miss2:
+	printxy 0,0,"miss2     "
+	jmp .done
 .done:
 	call restoreTargets
 	ret
@@ -91,7 +100,8 @@ eraseTargets:
 	;ret
 
 highlightTargets:
-	ret
+	jmp gameHighlightDropObjects
+	;ret
 
 restoreTargets:
 	jmp gameDrawDropObjects
@@ -103,7 +113,6 @@ onVerticalRetrace:
 	call gameEraseDropObjects
 	call gameUpdateDropObjects
 	call gameDrawDropObjects
-
 	ret
 
 gameUpdateDropObjects:
@@ -113,29 +122,32 @@ gameUpdateDropObjects:
 	ret
 
 gameDrawDropObjects:
+	mov si, res_droplet1
 	MOBJ_LIST_FOREACH droplets
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		mov si, res_droplet1
 		call blit_tile16XY
 	MOBJ_NEXT
 	ret
 
 gameEraseDropObjects:
+	mov si, black_tile
 	MOBJ_LIST_FOREACH droplets
-		; Load current coordinates and adjust scale
 		MOBJ_GET_SCR_X ax, bp
-		MOBJ_GET_SCR_X bx, bp
-		; Load object dimensinos
-		push cx
-		MOBJ_GET_W cx, bp
-		MOBJ_GET_H dx, bp
-		mov byte [draw_color], 0 ; Background
-		call fillRect
-		pop cx
+		MOBJ_GET_SCR_Y bx, bp
+		call blit_tile16XY
 	MOBJ_NEXT
-
 	ret
+
+gameHighlightDropObjects:
+	mov si, white_tile
+	MOBJ_LIST_FOREACH droplets
+		MOBJ_GET_SCR_X ax, bp
+		MOBJ_GET_SCR_Y bx, bp
+		call blit_tile16XY
+	MOBJ_NEXT
+	ret
+
 
 gameInitDropObjects:
 	MOBJ_LIST_FOREACH droplets
@@ -144,16 +156,14 @@ gameInitDropObjects:
 	MOBJ_NEXT
 
 	; Hardcode default positions and speeds for now
-	MOBJ_SETYVEL(drop1, 8)
-	MOBJ_SETYVEL(drop2, 4)
-	MOBJ_SETYVEL(drop3, 1)
-	MOBJ_SETYVEL(drop4, 16)
-	MOBJ_SETYVEL(drop5, 2)
-	MOBJ_SETX(drop2, 100 * 16 )
-	MOBJ_SETX(drop3, 80 * 16 )
-	MOBJ_SETX(drop4, 60 * 16 )
-	MOBJ_SETX(drop5, 140 * 16 )
+%assign id 1
+%rep MAX_DROPS
+;	MOBJ_SETYVEL(drop%+id, id * 2)
+	MOBJ_SETX(drop%+id, (16 * id) * 16 )
+%assign id id+1
+%endrep
 	ret
+
 
 ; Restore original video mode,
 ; call dos service to exit
