@@ -14,6 +14,8 @@ section .bss
 
 glp_mustrun: resb 1
 
+trig_active: resb 1
+
 _first_hook:
 glp_hook_esc: resw 1
 glp_hook_trigger_pulled: resw 1
@@ -83,8 +85,14 @@ glp_run:
 	jmp_if_trigger_pulled .pulled
 	jmp .not_pulled
 .pulled:
+	; Only call trigger hook on rising edge.
+	jmp_mbyte_true [trig_active], .trigger_management_done
+	mov byte [trig_active], 1
 	call [glp_hook_trigger_pulled]
+	jmp .trigger_management_done
 .not_pulled:
+	mov byte [trig_active], 0
+.trigger_management_done:
 %endif
 
 	call [glp_hook_vert_retrace]
