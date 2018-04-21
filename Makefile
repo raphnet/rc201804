@@ -8,7 +8,7 @@ GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA))
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
 tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_common.asm
 
-all: zapdemo1.com zapdemo2.com vgazap1.com
+all: zapdemo1.com zapdemo2.com vgazap1.com rain.com
 
 
 ### Executables
@@ -25,6 +25,10 @@ vgazap1.com: vgazap1.asm vgalib.asm
 	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
+rain.com: rain.asm zapper.asm gameloop.asm mobj.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
+	$(NASM) $< -fbin -o $@ -l $@.lst
+	ls -l $@
+
 
 ### Test, deployment and housekeeping
 
@@ -37,6 +41,8 @@ run2: zapdemo2.com
 runv1: vgazap1.com vgalib.asm
 	dosbox -noautoexec -conf vga.dosbox.conf $<
 
+runrain: rain.com
+	dosbox -noautoexec -conf tga.dosbox.conf $<
 
 release:
 
