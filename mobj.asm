@@ -10,6 +10,8 @@ STRUC mobj ; mobj -> moving object
 	.h: resw 1
 	.xvel: resw 1
 	.yvel: resw 1
+	.prev_x: resw 1
+	.prev_y: resw 1
 	.size:
 ENDSTRUC
 
@@ -52,7 +54,12 @@ ENDSTRUC
 %endmacro
 
 ; Convert stored value (x or y) to screen value
-%define MOBJ_SCALE_TO_SCR(reg) shift_div_16 reg
+%define MOBJ_XY_TO_SCR(reg) shift_div_16 reg
+; Convert screen value to stored (scaled) value
+%define MOBJ_XY_FROM_SCR(reg) shift_mul_16 reg
+; Mask for the bits corresponding to screen coordinates. Useful
+; for comparing scaled values. (see mobj_scr_pos_changed)
+%define MOBJ_SCR_MASK 0xfff0
 
 ; Macros to set various fields...
 %define MOBJ_SETX(obj, val) mov word [obj + mobj.x], val
@@ -76,19 +83,55 @@ ENDSTRUC
 
 ; Get an object X screen position
 ; reg must be a 16-bit register (eg: ax)
-; note: Argument in "natural" order, as if using mov instruction
+; note: Arguments in "natural" order, as if using mov instruction
 %macro MOBJ_GET_SCR_X 2 ; regx obj
 	; load value
 	mov %1, [%2 + mobj.x]
 	; scale down to screen
-	MOBJ_SCALE_TO_SCR(%1)
+	MOBJ_XY_TO_SCR(%1)
 %endmacro
 %macro MOBJ_GET_SCR_Y 2 ; regx obj
 	; load value
 	mov %1, [%2 + mobj.y]
 	; scale down to screen
-	MOBJ_SCALE_TO_SCR(%1)
+	MOBJ_XY_TO_SCR(%1)
 %endmacro
+%macro MOBJ_GET_PREV_SCR_X 2 ; regx obj
+	; load value
+	mov %1, [%2 + mobj.prev_x]
+	; scale down to screen
+	MOBJ_XY_TO_SCR(%1)
+%endmacro
+%macro MOBJ_GET_PREV_SCR_Y 2 ; regx obj
+	; load value
+	mov %1, [%2 + mobj.prev_y]
+	; scale down to screen
+	MOBJ_XY_TO_SCR(%1)
+%endmacro
+
+
+; Set an object X screen position;
+;
+; note: Arguments in "natural" order as if using mov instruction
+%macro MOBJ_SET_SCR_X 2 ; obj reg/imm
+	push ax
+	mov_mword_through_ax [%1 + mobj.prev_x], [%1 + mobj.x]
+	mov ax, %2
+	MOBJ_XY_FROM_SCR(ax)
+	mov [%1 + mobj.x], ax
+	pop ax
+%endmacro
+%macro MOBJ_SET_SCR_Y 2 ; obj reg/imm
+	push ax
+	mov_mword_through_ax [%1 + mobj.prev_y], [%1 + mobj.y]
+	mov ax, %2
+	MOBJ_XY_FROM_SCR(ax)
+	mov [%1 + mobj.y], ax
+	pop ax
+%endmacro
+
+
+; Get object width/height, mov-like syntax
 %macro MOBJ_GET_W 2
 	mov %1, [%2 + mobj.w]
 %endmacro
@@ -105,13 +148,19 @@ ENDSTRUC
 	;
 	; BP must point to a mobj struc
 mobj_tick:
-	; Load current (scaled up) position value, add velocity, store back
+	push ax
+	; Save current position
+	mov_mword_through_ax [bp + mobj.prev_x], [bp + mobj.x]
+	mov_mword_through_ax [bp + mobj.prev_y], [bp + mobj.y]
+
+	; Load current position value, add velocity, store back
 	mov ax, [bp + mobj.x]
 	add ax, [bp + mobj.xvel]
 	mov [bp + mobj.x], ax
 	mov ax, [bp + mobj.y]
 	add ax, [bp + mobj.yvel]
 	mov [bp + mobj.y], ax
+	pop ax
 	ret
 
 	;;;;;; mobj_init : Set default (zero) values on an object
@@ -121,15 +170,45 @@ mobj_tick:
 mobj_init:
 	push ax
 	push cx
-	push si
+	push di
 
 	mov al, 0
-	mov si, bp
+	mov di, bp
 	mov cx, mobj.size
-	rep stosb
+	DS rep stosb
 
-	pop si
+	pop di
 	pop cx
+	pop ax
+
+	ret
+
+	;;;;;; mobj_scr_pos_changed : Check if the screen position of an object has changed
+	;
+	; Useful to only redraw objects whose position ON SCREEN has changed.
+	;
+	; BP must point to a mobj struct
+	; Zero flag set if unchanged
+	;
+mobj_scr_pos_changed:
+	push ax
+	push bx
+
+	mov ax, [bp + mobj.x]
+	mov bx, [bp + mobj.prev_x]
+	and ax, MOBJ_SCR_MASK
+	and bx, MOBJ_SCR_MASK
+	cmp ax, bx
+	jnz .done
+
+	mov ax, [bp + mobj.y]
+	mov bx, [bp + mobj.prev_y]
+	and ax, MOBJ_SCR_MASK
+	and bx, MOBJ_SCR_MASK
+	cmp ax, bx
+
+.done:
+	pop bx
 	pop ax
 	ret
 

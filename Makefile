@@ -11,14 +11,17 @@ tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_
 all: zapdemo1.com zapdemo2.com vgazap1.com rain.com
 
 
+MOUSE_SUPPORT=
+MOUSE_SUPPORT=-DMOUSE_SUPPORT
+
 ### Executables
 
 zapdemo1.com: zapdemo1.asm zapper.asm gameloop.asm zapdemo1.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
+	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
 zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst
+	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
 vgazap1.com: vgazap1.asm vgalib.asm
@@ -26,7 +29,7 @@ vgazap1.com: vgazap1.asm vgalib.asm
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
+	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
 

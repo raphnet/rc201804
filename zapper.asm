@@ -201,7 +201,6 @@ detectLightMouse:
 	test al, ch
 	jnz .loop_wait_retrace_end ; still in retrace
 
-
 %ifdef VISIBLE_MOUSE
 	mov ax, 0x0002 ; hide mouse cursor
 	int 33h
@@ -218,6 +217,7 @@ detectLightMouse:
 	; are scaled in tandy mode...
 	shr cx, 1
 
+
 	; fake vertical timing
 	mov word [zapper_last_start], dx
 	mov word [zapper_last_count], 200
@@ -231,6 +231,7 @@ detectLightMouse:
 	mov dl, 0xf
 	call putPixel
 %endif
+
 	call getPixel
 	; Returns the pixel color in DL, setting the zero flag if color is 0.
 	; Perfect!
