@@ -6,6 +6,8 @@ cpu 8086
 %define TRIGGER_BIT		0x40
 %define LIGHT_BIT		0x80
 
+%undef VISIBLE_MOUSE
+
 ; Jump to label if trigger pulled.
 %macro jmp_if_trigger_pulled	1
 	push ax
@@ -56,6 +58,8 @@ section .bss
 zapper_last_start: resw 1
 ; Counts for how many cycles light was seen
 zapper_last_count: resw 1
+; Only in mouse mode
+zapper_last_x: resw 1
 
 section .text
 
@@ -132,6 +136,7 @@ detectLight:
 
 	mov word [zapper_last_start], 0
 	mov word [zapper_last_count], 0
+	mov word [zapper_last_x], 0
 
 	xor bx, bx ; Use bl to remember if light was seen, bh to detect changes
 	mov cl, LIGHT_BIT ; mask to check light input bit
@@ -213,9 +218,19 @@ detectLightMouse:
 	; are scaled in tandy mode...
 	shr cx, 1
 
+	; fake vertical timing
+	mov word [zapper_last_start], dx
+	mov word [zapper_last_count], 200
+	mov word [zapper_last_x], cx
+
 	; Use the getPixel function from the video library
 	mov ax, cx
 	mov bx, dx
+
+%if 0
+	mov dl, 0xf
+	call putPixel
+%endif
 	call getPixel
 	; Returns the pixel color in DL, setting the zero flag if color is 0.
 	; Perfect!
@@ -233,6 +248,7 @@ detectLightMouse:
 	in al, dx
 	test al, ch
 	jz .waitRetraceStart ; not in retrace yet
+
 
 	popf
 
