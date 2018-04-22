@@ -18,6 +18,15 @@ section .text
 	shr %1, 1
 %endmacro
 
+%macro shift_mul_16 1
+; On later CPUs, this could be replaced by shl %1, 4
+	shl %1, 1
+	shl %1, 1
+	shl %1, 1
+	shl %1, 1
+%endmacro
+
+
 
 ; Perform an indirect call if the destination is not null
 ;
