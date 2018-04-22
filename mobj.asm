@@ -12,6 +12,7 @@ STRUC mobj ; mobj -> moving object
 	.yvel: resw 1
 	.prev_x: resw 1
 	.prev_y: resw 1
+	.enabled: resb 1
 	.size:
 ENDSTRUC
 
@@ -49,9 +50,30 @@ ENDSTRUC
 ; Continue loop if there are still unprocessed list items;
 ; Use with MOBJ_FOREACH
 %macro MOBJ_NEXT 0
+.mobj_foreach_skip:
 	add bp, mobj.size
 	loop .mobj_foreach_lp
 %endmacro
+
+; Start a loop on all enabled list items
+%macro MOBJ_LIST_FOREACH_ENABLED 1
+	MOBJ_GET_LIST_COUNT cx, %1
+	mov bp, %1
+.mobj_foreach_lp:
+	test byte [bp + mobj.enabled], 0xff
+	jz .mobj_foreach_skip
+%endmacro
+
+; Start a loop on all enabled list items
+%macro MOBJ_LIST_FOREACH_DISABLED 1
+	MOBJ_GET_LIST_COUNT cx, %1
+	mov bp, %1
+.mobj_foreach_lp:
+	test byte [bp + mobj.enabled], 0xff
+	jnz .mobj_foreach_skip
+%endmacro
+
+
 
 ; Convert stored value (x or y) to screen value
 %define MOBJ_XY_TO_SCR(reg) shift_div_16 reg
@@ -79,6 +101,12 @@ ENDSTRUC
 %macro MOBJ_SETSIZE 3 ; mobj w h
 	MOBJ_SETW(%1, %2)
 	MOBJ_SETH(%1, %3)
+%endmacro
+%macro MOBJ_ENABLE 1 ; obj
+	mov byte [%1 + mobj.enabled], 1
+%endmacro
+%macro MOBJ_DISABLE 1 ; obj
+	mov byte [%1 + mobj.enabled], 0
 %endmacro
 
 ; Get an object X screen position
@@ -108,7 +136,6 @@ ENDSTRUC
 	; scale down to screen
 	MOBJ_XY_TO_SCR(%1)
 %endmacro
-
 
 ; Set an object X screen position;
 ;

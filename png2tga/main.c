@@ -9,7 +9,7 @@ static void printusage(void)
 {
 	printf("Usage: ./png2tga input_file output_file\n");
 	printf("\n");
-	printf("input_file must be a 2-bit color PNG file.\n");
+	printf("input_file must be a 4-bit color PNG file.\n");
 }
 
 int main(int argc, char **argv)
@@ -93,7 +93,8 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 	png_init_io(png_ptr, fptr_in);
 	png_set_sig_bytes(png_ptr, 8);
 
-	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_ALPHA | PNG_TRANSFORM_PACKING, NULL);
+	//png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_ALPHA | PNG_TRANSFORM_PACKING, NULL);
+	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_ALPHA, NULL);
 
 	w = png_get_image_width(png_ptr, info_ptr);
 	h = png_get_image_height(png_ptr, info_ptr);

@@ -12,7 +12,7 @@ all: zapdemo1.com zapdemo2.com vgazap1.com rain.com
 
 
 MOUSE_SUPPORT=
-MOUSE_SUPPORT=-DMOUSE_SUPPORT
+#MOUSE_SUPPORT=-DMOUSE_SUPPORT
 
 ### Executables
 
