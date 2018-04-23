@@ -67,6 +67,14 @@ getRandom8:
 	xor bh, bh
 
 	call clkRandom
+	call clkRandom
+	call clkRandom
+	call clkRandom
+	call clkRandom
+	call clkRandom
+	call clkRandom
+	call clkRandom
+
 	; result in ax
 	xor ah,al
 

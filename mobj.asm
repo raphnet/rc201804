@@ -166,6 +166,20 @@ ENDSTRUC
 	mov %1, [%2 + mobj.h]
 %endmacro
 
+%macro MOBJ_CUR_XY_TO_PREV 1
+	push ax
+	mov_mword_through_ax [%1 + mobj.prev_x], [%1 + mobj.x]
+	mov_mword_through_ax [%1 + mobj.prev_y], [%1 + mobj.y]
+	pop ax
+%endmacro
+
+%macro MOBJ_PREV_XY_TO_CUR 1
+	push ax
+	mov_mword_through_ax [%1 + mobj.x], [%1 + mobj.prev_x]
+	mov_mword_through_ax [%1 + mobj.y], [%1 + mobj.prev_y]
+	pop ax
+%endmacro
+
 .data:
 
 	;;;;;; mobj_tick : Update an object position
@@ -176,9 +190,9 @@ ENDSTRUC
 	; BP must point to a mobj struc
 mobj_tick:
 	push ax
+
 	; Save current position
-	mov_mword_through_ax [bp + mobj.prev_x], [bp + mobj.x]
-	mov_mword_through_ax [bp + mobj.prev_y], [bp + mobj.y]
+	MOBJ_CUR_XY_TO_PREV bp
 
 	; Load current position value, add velocity, store back
 	mov ax, [bp + mobj.x]

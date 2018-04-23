@@ -8,6 +8,8 @@ cpu 8086
 %define NUM_KEYS (320/32)
 %define DROP_FLOOR_Y (FIRST_KEY_Y-16)
 %define DROPS_INITIAL_Y 0
+%define DROP0_X	8
+%define DROPS_X_PITCH 32
 %define MAX_DROPS	NUM_KEYS
 
 ;;;; Make sure to jump to main first before includes
@@ -26,12 +28,21 @@ section .bss
 dropscheduler_framecount_top: resw 1
 dropscheduler_framecount: resw 1
 
+; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
+keyconditions: resb NUM_KEYS
+breaking_keys_framecount: resw 1
+
 section .data
 
 ; Symbols required to reference sprites by their ID.
 ; for instance: get16x16TileID (macro) or getTile16 (function)
 first32x32_tile:
 	inc_resource key_grey
+	inc_resource key_brk1
+	inc_resource key_brk2
+	inc_resource key_brk3
+	inc_resource key_brk4
+	inc_resource key_brk5
 first16x16_tile:
 	inc_resource droplet1
 	inc_resource droplet2
@@ -126,6 +137,7 @@ onVerticalRetrace:
 
 	; Erase and redraw objects that moved
 	call gameRedrawMovedObjects
+	call gameAnimateBreakingKeys
 
 	;; Now compute positions for next frame and run game logic
 
@@ -149,7 +161,6 @@ gameUpdateDropObjects:
 	MOBJ_GET_SCR_Y ax, bp
 	cmp ax, DROP_FLOOR_Y
 	jl .next
-
 	call gameEventObjectReachedFloor
 .next:
 	MOBJ_NEXT
@@ -218,22 +229,103 @@ gameEventObjectReachedFloor:
 	MOBJ_DISABLE bp
 
 	; Draw black over it
-	MOBJ_GET_SCR_X ax, bp
-	MOBJ_GET_SCR_Y bx, bp
+	MOBJ_GET_PREV_SCR_X ax, bp
+	MOBJ_GET_PREV_SCR_Y bx, bp
 	mov si, black_tile
 	call blit_tile16XY
 
+	; Make sure the previous position next time this object is enabled
+	; and drawn is not below the keyboard!
+	MOBJ_PREV_XY_TO_CUR bp
+
 	; TODO : Break the key that was touched
 
+	; Convert droplet BP to index
+	mov ax, bp
+	sub ax, droplets
+	mov bl, mobj.size
+	div bl ; al = ax / bl
+	xor ah,ah
+	; BX now contains the index
+	mov bx, ax
+
+	; First check that key is still fine
+	mov al, [keyconditions + bx]
+	and al, al
+	jnz .ignore
+
+	; Start the breaking animation
+	mov byte [keyconditions + bx], 1
+
+.ignore:
 	pop si
 	pop bx
 	pop ax
 	ret
 
-
-	;;;;; gameEventObjectReachedFloor
+	;;;;; gameAnimateBreakingKeys
 	;
-	; Called when a raindrop reaches the keyboard.
+	; Called after drawing droplets in their new position
+	;
+gameAnimateBreakingKeys:
+	inc word [breaking_keys_framecount]
+	cmp word [breaking_keys_framecount], 4
+	jl .done
+
+	mov word [breaking_keys_framecount], 0
+
+	mov bx, keyconditions
+	mov cx, NUM_KEYS
+.lp:
+	xor ah,ah
+	mov al, [bx]
+	and al, al ; Fine (as drawn at beginning)
+	jz .next
+	cmp al, 0xff ; broken (done animating)
+	jz .next
+
+	; Draw current animation step
+	push ax
+	push bx
+	push cx
+		add ax, 1 ; Start from first broken key tile
+		call getTile32 ; returns tile id AX
+
+		sub bx, keyconditions ; Key index in BX
+		mov al, bl ; Index in AL
+		mov bh, DROPS_X_PITCH
+		mul bh ; AX = AL * DROPS_X_PITCH
+		add ax, FIRST_KEY_X
+
+		mov bx, FIRST_KEY_Y
+		mov cx, 32
+		mov dx, 32
+		call blit_imageXY
+	pop cx
+	pop bx
+	pop ax
+
+	; Now that we've drawn, take care of advancing to next
+	; animation frame for next call
+	inc ax
+	cmp ax, 5
+	jl .moretogo
+	mov byte [bx], 0xff ; Broken key
+	jmp .next
+
+.moretogo:
+	mov [bx], al
+
+.next:
+	inc bx
+	loop .lp
+
+.done:
+	ret
+
+	;;;;; gameEventObjectHit
+	;
+	; Called when a raindrop was successfully shot
 	; BP = mobj
 	;
 gameEventObjectHit:
@@ -324,8 +416,8 @@ gameInitDropObjects:
 	; Hardcode default positions and speeds for now
 %assign id 1
 %rep MAX_DROPS
-	MOBJ_SETYVEL(drop%+id, 16)
-	MOBJ_SET_SCR_X drop%+id, (32 * id + 8)
+	MOBJ_SETYVEL(drop%+id, 64)
+	MOBJ_SET_SCR_X drop%+id, (DROPS_X_PITCH * (id-1) + DROP0_X)
 	MOBJ_SET_SCR_Y drop%+id, DROPS_INITIAL_Y
 %assign id id+1
 %endrep
@@ -358,9 +450,15 @@ gamePrepareNew:
 	dec bp
 	jnz .lp
 
+	mov cx, NUM_KEYS
+.lp2:
+	mov bx, 0
+	mov word [keyconditions + bx], 0 ; fine
+	add bx, 2
+	loop .lp2
 
 	; Initialize difficulty variables
-	mov word [dropscheduler_framecount_top], 60 ; 1 per second
+	mov word [dropscheduler_framecount_top], 15 ; 1 per second
 	mov word [dropscheduler_framecount], 0
 
 	pop bp
