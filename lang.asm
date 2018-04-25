@@ -37,7 +37,7 @@ lang_current: resb 1
 ; 2: 'yY'
 %macro defineCharPair 2
 	push ax
-	mov ax, %1
+	mov ax, %2
 	mov [%1], ax
 	pop ax
 %endmacro
@@ -84,7 +84,6 @@ _first_lang:
 ;
 lang_select:
 	mov [lang_current], al
-	xor ah,ah
 	and al,al
 	jz _lang_fr
 
