@@ -90,6 +90,8 @@ lang_select:
 
 _lang_en: ; English language strings
 	mov word [str_empty], empty_string
+	defineCharPair lang_yes_keys, 'yY'
+	defineCharPair lang_no_keys, 'nN'
 	defineString str_yes, "Yes"
 	defineString str_no, "No"
 
