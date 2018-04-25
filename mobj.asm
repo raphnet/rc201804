@@ -143,6 +143,8 @@ ENDSTRUC
 %macro MOBJ_SET_SCR_X 2 ; obj reg/imm
 	push ax
 	mov_mword_through_ax [%1 + mobj.prev_x], [%1 + mobj.x]
+	pop ax
+	push ax
 	mov ax, %2
 	MOBJ_XY_FROM_SCR(ax)
 	mov [%1 + mobj.x], ax
@@ -151,6 +153,8 @@ ENDSTRUC
 %macro MOBJ_SET_SCR_Y 2 ; obj reg/imm
 	push ax
 	mov_mword_through_ax [%1 + mobj.prev_y], [%1 + mobj.y]
+	pop ax
+	push ax
 	mov ax, %2
 	MOBJ_XY_FROM_SCR(ax)
 	mov [%1 + mobj.y], ax
