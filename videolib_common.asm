@@ -650,9 +650,9 @@ _ayn_no_callback:
 	cmp al, [lang_yes_keys+1]
 	je _ayn_yes
 
-	cmp al, 'n'
+	cmp al, [lang_no_keys]
 	je _ayn_no
-	cmp al, 'N'
+	cmp al, [lang_no_keys+1]
 	je _ayn_no
 	cmp al, 27
 	jne _ayn_again
