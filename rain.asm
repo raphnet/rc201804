@@ -12,6 +12,15 @@ cpu 8086
 %define DROPS_X_PITCH 32
 %define MAX_DROPS	NUM_KEYS
 
+; All labels on the first line
+%define LABELS_Y		0
+%define PLAYER_LABEL_X	0
+%define LEVEL_LABEL_X	144
+%define MISSES_LABEL_X	256
+
+; The score, below the player
+%define SCORE_X PLAYER_LABEL_X
+%define SCORE_Y 10
 
 ;;;; Make sure to jump to main first before includes
 section .text
@@ -29,9 +38,7 @@ section .bss
 
 dropscheduler_framecount_top: resw 1
 dropscheduler_framecount: resw 1
-
-
-
+drop_initial_velocity: resw 1
 
 ; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
 keyconditions: resb NUM_KEYS
@@ -78,6 +85,7 @@ section .text
 
 ;;;; Entry point
 start:
+	cld
 	call initRandom
 	call initvlib
 	call setvidmode
@@ -218,6 +226,8 @@ gameRedrawMovedObjects:
 		MOBJ_GET_SCR_Y bx, bp
 		mov si, res_droplet1
 		call blit_tile16XY
+
+		inc word [bp + mobj.yvel]
 .skip:
 	MOBJ_NEXT
 	ret
@@ -359,6 +369,7 @@ gameEventObjectHit:
 	;
 gameDropSchedulerTick:
 	push ax
+	push bx
 
 	mov ax, [dropscheduler_framecount]
 	test ax, 0xffff
@@ -399,6 +410,8 @@ spawn_new_drop:
 		jnz .next
 
 		MOBJ_SET_SCR_Y bp, DROPS_INITIAL_Y
+		mov bx, [drop_initial_velocity]
+		MOBJ_SETYVEL(bp, bx)
 		MOBJ_ENABLE bp
 
 		jmp game_drop_scheduler_tick_done
@@ -406,6 +419,7 @@ spawn_new_drop:
 		dec ax
 	MOBJ_NEXT
 game_drop_scheduler_tick_done:
+	pop bx
 	pop ax
 	ret
 
@@ -418,8 +432,8 @@ gameDrawScore:
 	push bx
 	push cx
 
-	mov ax, 240
-	mov bx, 0
+	mov ax, SCORE_X
+	mov bx, SCORE_Y
 %assign i SCORE_DIGITS-1
 %rep SCORE_DIGITS
 	mov cl, [score + i]
@@ -436,18 +450,24 @@ gameDrawScore:
 
 	;;;;; gameInitDropObjects
 	;
-	;
+	; BX: Drop initial velocity
 	;
 gameInitDropObjects:
+	push ax
+	push bp
+
 	mov ax, DROP0_X
 	MOBJ_LIST_FOREACH droplets
 		call mobj_init
 		MOBJ_SETSIZE bp, 16, 16
 		MOBJ_SET_SCR_X bp, ax
 		MOBJ_SET_SCR_Y bp, DROPS_INITIAL_Y
-		MOBJ_SETYVEL(bp, 64)
+		MOBJ_SETYVEL(bp, bx)
 		add ax, DROPS_X_PITCH
 	MOBJ_NEXT
+
+	pop bp
+	pop ax
 	ret
 
 gamePrepareNew:
@@ -461,6 +481,11 @@ gamePrepareNew:
 	; Clear screen
 	mov al, 0
 	call fillScreen
+
+	; Draw labels
+	printxy PLAYER_LABEL_X,LABELS_Y,"Player 1"
+	printxy LEVEL_LABEL_X,LABELS_Y,"Level"
+	printxy MISSES_LABEL_X,LABELS_Y,"Misses"
 
 	; Draw keyboard keys
 	mov bp, NUM_KEYS
@@ -479,8 +504,8 @@ gamePrepareNew:
 
 	; At first, all keyboard keys are in good shape
 	mov cx, NUM_KEYS
-.lp2:
 	mov bx, 0
+.lp2:
 	mov word [keyconditions + bx], 0 ; fine
 	add bx, 2
 	loop .lp2
@@ -488,6 +513,13 @@ gamePrepareNew:
 	; Initialize difficulty variables
 	mov word [dropscheduler_framecount_top], 60 ; 1 per second
 	mov word [dropscheduler_framecount], 0
+	mov word [drop_initial_velocity], 1
+
+	mov bx, [drop_initial_velocity]
+	call gameInitDropObjects
+
+	; Zero the score
+	call score_clear
 
 	pop bp
 	pop si
@@ -496,6 +528,7 @@ gamePrepareNew:
 	pop bx
 	pop ax
 	ret
+
 
 ; Restore original video mode,
 ; call dos service to exit
