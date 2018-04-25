@@ -15,6 +15,7 @@ score_increment: resb SCORE_DIGITS
 %assign i 0
 %rep SCORE_DIGITS
 	mov byte [score_increment+i], 0
+%assign i i+1
 %endrep
 %endmacro
 
@@ -59,7 +60,7 @@ score_add:
 	mov bx, score_increment
 	mov si, score
 
-	mov cx, SCORE_DIGITS
+	mov cx, SCORE_DIGITS-1
 .lp:
 		mov ax, [si]
 		add al, [bx]
