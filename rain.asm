@@ -22,6 +22,8 @@ cpu 8086
 %define SCORE_X PLAYER_LABEL_X
 %define SCORE_Y 10
 
+%define NO_ACCELERATION
+
 ;;;; Make sure to jump to main first before includes
 section .text
 jmp start
@@ -226,8 +228,9 @@ gameRedrawMovedObjects:
 		MOBJ_GET_SCR_Y bx, bp
 		mov si, res_droplet1
 		call blit_tile16XY
-
+%ifndef NO_ACCELERATION
 		inc word [bp + mobj.yvel]
+%endif
 .skip:
 	MOBJ_NEXT
 	ret
@@ -274,6 +277,7 @@ gameEventObjectReachedFloor:
 	; Start the breaking animation
 	mov byte [keyconditions + bx], 1
 
+	;call score_add100
 .ignore:
 	pop si
 	pop bx
