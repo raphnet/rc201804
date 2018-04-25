@@ -215,14 +215,18 @@ mobj_tick:
 mobj_init:
 	push ax
 	push cx
+	push es
 	push di
 
-	mov al, 0
+	mov ax, ds
+	mov es, ax
 	mov di, bp
+	mov al, 0
 	mov cx, mobj.size
-	DS rep stosb
+	rep stosb
 
 	pop di
+	pop es
 	pop cx
 	pop ax
 
