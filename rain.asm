@@ -7,10 +7,11 @@ cpu 8086
 %define FIRST_KEY_Y (200-32)
 %define NUM_KEYS (320/32)
 %define DROP_FLOOR_Y (FIRST_KEY_Y-16)
-%define DROPS_INITIAL_Y 0
+%define DROPS_INITIAL_Y 16
 %define DROP0_X	8
 %define DROPS_X_PITCH 32
 %define MAX_DROPS	NUM_KEYS
+
 
 ;;;; Make sure to jump to main first before includes
 section .text
@@ -22,11 +23,15 @@ jmp start
 %define ZAPPER_SUPPORT
 %include 'gameloop.asm'
 %include 'mobj.asm'
+%include 'score.asm'
 
 section .bss
 
 dropscheduler_framecount_top: resw 1
 dropscheduler_framecount: resw 1
+
+
+
 
 ; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
 keyconditions: resb NUM_KEYS
@@ -147,6 +152,8 @@ onVerticalRetrace:
 	; Run the drop scheduler to "spawn" new raindrops, according
 	; to elapsed time and game level
 	call gameDropSchedulerTick
+
+	call gameDrawScore
 
 	ret
 
@@ -340,6 +347,8 @@ gameEventObjectHit:
 	call blit_tile16XY
 
 	; TODO Score? Count? Increase difficulty?
+	call score_add100
+
 	ret
 
 
@@ -396,31 +405,49 @@ spawn_new_drop:
 .next:
 		dec ax
 	MOBJ_NEXT
-
-
 game_drop_scheduler_tick_done:
 	pop ax
 	ret
 
+	;;;;; gameDrawScore
+	;
+	;
+	;
+gameDrawScore:
+	push ax
+	push bx
+	push cx
+
+	mov ax, 240
+	mov bx, 0
+%assign i SCORE_DIGITS-1
+%rep SCORE_DIGITS
+	mov cl, [score + i]
+	add cl, '0'
+	call drawChar
+	add ax, 8
+%assign i i-1
+%endrep
+	pop cx
+	pop bx
+	pop ax
+
+	ret
 
 	;;;;; gameInitDropObjects
 	;
 	;
 	;
 gameInitDropObjects:
+	mov ax, DROP0_X
 	MOBJ_LIST_FOREACH droplets
 		call mobj_init
 		MOBJ_SETSIZE bp, 16, 16
+		MOBJ_SET_SCR_X bp, ax
+		MOBJ_SET_SCR_Y bp, DROPS_INITIAL_Y
+		MOBJ_SETYVEL(bp, 64)
+		add ax, DROPS_X_PITCH
 	MOBJ_NEXT
-
-	; Hardcode default positions and speeds for now
-%assign id 1
-%rep MAX_DROPS
-	MOBJ_SETYVEL(drop%+id, 64)
-	MOBJ_SET_SCR_X drop%+id, (DROPS_X_PITCH * (id-1) + DROP0_X)
-	MOBJ_SET_SCR_Y drop%+id, DROPS_INITIAL_Y
-%assign id id+1
-%endrep
 	ret
 
 gamePrepareNew:
@@ -450,6 +477,7 @@ gamePrepareNew:
 	dec bp
 	jnz .lp
 
+	; At first, all keyboard keys are in good shape
 	mov cx, NUM_KEYS
 .lp2:
 	mov bx, 0
@@ -458,7 +486,7 @@ gamePrepareNew:
 	loop .lp2
 
 	; Initialize difficulty variables
-	mov word [dropscheduler_framecount_top], 15 ; 1 per second
+	mov word [dropscheduler_framecount_top], 60 ; 1 per second
 	mov word [dropscheduler_framecount], 0
 
 	pop bp
