@@ -35,6 +35,7 @@ jmp start
 %include 'gameloop.asm'
 %include 'mobj.asm'
 %include 'score.asm'
+%include 'messagescreen.asm'
 
 section .bss
 
@@ -66,8 +67,6 @@ first16x16_tile:
 
 first8x8_tile:
 
-teststr: db 'Hello',0
-
 section .bss
 
 MOBJ_LIST_START droplets
@@ -92,26 +91,57 @@ start:
 	call initvlib
 	call setvidmode
 	call setupVRAMpointer
-	mov al, 0
+	mov al, 0 ; english
 	call lang_select
 
 	call setupVRAMpointer
 
 	call glp_init ; Init gameloop
-	call gameInitDropObjects ; Init game variables/state
-	call gamePrepareNew
 
+	call gamePrepareNew
 	; Set gameloop hooks
 	call glp_clearHooks
-	glp_setHook(glp_hook_esc, glp_end) ; ESC quits game
+	glp_setHook(glp_hook_esc, onESCpressed)
 	glp_setHook(glp_hook_trigger_pulled, onTriggerPulled)
 	glp_setHook(glp_hook_vert_retrace, onVerticalRetrace)
-
+.next_level:
 
 	; Run the gameloop
 	call glp_run
 	jmp exit
 
+	;;;;; onESCpressed
+	;
+	; Called by the gameloop when the ESC key is pressed
+	;
+onESCpressed:
+	push cx
+	push dx
+
+	call messageScreen_start
+.ask_again:
+	getStrDX str_end_game
+	call messageScreen_drawText_prepare
+	mov cx, 0 ; default no
+	call askYesNoQuestion ; CF set if ESC was pressed. CX = 0 for no
+	jc .ask_again
+	call messageScreen_end
+
+	and cx,cx
+	jz .done
+
+	; ESC quits game
+	call glp_end
+
+.done:
+	pop dx
+	pop cx
+	ret
+
+	;;;;; onTriggerPulled
+	;
+	; Called by the gameloop when the trigger is pulled
+	;
 onTriggerPulled:
 	; Start by hiding all droplets
 	call gameEraseDropObjects

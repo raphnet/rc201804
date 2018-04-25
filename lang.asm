@@ -26,6 +26,7 @@ str_no: resw 1
 lang_yes_keys: resw 1
 lang_no_keys: resw 1
 str_ready: resw 1
+str_end_game: resw 1
 
 lang_current: resb 1
 
@@ -95,6 +96,7 @@ _lang_en: ; English language strings
 	defineString str_no, "No"
 
 	defineString str_ready, "Ready?"
+	defineString str_end_game, "End game?"
 
 	ret
 
@@ -105,7 +107,8 @@ _lang_fr: ; French language strings
 	defineString str_yes, "Oui"
 	defineString str_no, "Non"
 
-	defineString str_ready, "ÃŠtes-vous prÃªt?"
+	defineString str_ready, "Êtes-vous prêt?"
+	defineString str_end_game, "Arrêter la partie?"
 
 	ret
 
