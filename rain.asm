@@ -24,6 +24,12 @@ cpu 8086
 
 %define NO_ACCELERATION
 
+; Various values used with glp_end for glp_run return value.
+%define RETVAL_WON			0
+%define RETVAL_GAMEOVER		1
+%define RETVAL_USER_QUIT	2
+
+
 ;;;; Make sure to jump to main first before includes
 section .text
 jmp start
@@ -67,6 +73,10 @@ first16x16_tile:
 
 first8x8_tile:
 
+images:
+	inc_resource game
+	inc_resource over
+
 section .bss
 
 MOBJ_LIST_START droplets
@@ -98,6 +108,10 @@ start:
 
 	call glp_init ; Init gameloop
 
+.title:
+	; TODO
+
+.game:
 	call gamePrepareNew
 	; Set gameloop hooks
 	call glp_clearHooks
@@ -105,16 +119,45 @@ start:
 	glp_setHook(glp_hook_trigger_pulled, onTriggerPulled)
 	glp_setHook(glp_hook_vert_retrace, onVerticalRetrace)
 .next_level:
-
 	; Run the gameloop
 	call glp_run
-	jmp exit
+
+	; Value passed to glp_end placed in AX by gpl_run. Act according
+	; to the reason why the game loop stopped
+	cmp ax, RETVAL_USER_QUIT
+	jz exit
+	cmp ax, RETVAL_GAMEOVER
+	jz .gameover
+
+	; otherwise, this will be RETVAL_WON
+	jmp .next_level
+
+.gameover:
+	mov cx, effect_height(200)
+	call eff_checkboard
+
+	mov si, res_game
+	mov ax, 24
+	mov bx, 100-16
+	mov cx, 128
+	mov dx, 32
+	call blit_imageXY
+
+	add ax, 128+16
+	mov si, res_over
+	call blit_imageXY
+
+	call flushkeyboard
+	call waitPressSpace
+
+	jmp .title
 
 	;;;;; onESCpressed
 	;
 	; Called by the gameloop when the ESC key is pressed
 	;
 onESCpressed:
+	push ax
 	push cx
 	push dx
 
@@ -126,17 +169,17 @@ onESCpressed:
 	call askYesNoQuestion ; CF set if ESC was pressed. CX = 0 for no
 	jc .ask_again
 	call messageScreen_end
-
 	and cx,cx
 	jz .done
-
 	; ESC quits game
+	mov ax, RETVAL_USER_QUIT
 	call glp_end
-
 .done:
 	pop dx
 	pop cx
+	pop ax
 	ret
+
 
 	;;;;; onTriggerPulled
 	;
