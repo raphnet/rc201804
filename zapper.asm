@@ -6,7 +6,7 @@ cpu 8086
 %define TRIGGER_BIT		0x40
 %define LIGHT_BIT		0x80
 
-%undef VISIBLE_MOUSE
+;%define VISIBLE_MOUSE
 
 ; Jump to label if trigger pulled.
 %macro jmp_if_trigger_pulled	1
