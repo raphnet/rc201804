@@ -29,7 +29,11 @@ section .text
 jmp start
 
 ;;;; Includes
+%ifdef VGA_VERSION
+%include 'vgalib.asm'
+%else
 %include 'tgalib.asm'
+%endif
 %include 'random.asm'
 %define ZAPPER_SUPPORT
 %include 'gameloop.asm'
