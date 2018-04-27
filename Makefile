@@ -31,7 +31,7 @@ vgazap1.com: vgazap1.asm vgalib.asm $(vga16lib)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT -DVISIBLE_MOUSE
 	ls -l $@
 
-rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
+rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm lang.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 

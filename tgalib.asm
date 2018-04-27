@@ -3,6 +3,9 @@
 ;
 ;
 
+%define SCREEN_WIDTH	320
+%define SCREEN_HEIGHT	200
+
 %define BITS_PER_PIXEL	4
 
 %include 'lang.asm'

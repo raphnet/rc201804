@@ -24,6 +24,12 @@ cpu 8086
 
 %define NO_ACCELERATION
 
+; Various values used with glp_end for glp_run return value.
+%define RETVAL_WON			0
+%define RETVAL_GAMEOVER		1
+%define RETVAL_USER_QUIT	2
+
+
 ;;;; Make sure to jump to main first before includes
 section .text
 jmp start
@@ -39,6 +45,7 @@ jmp start
 %include 'gameloop.asm'
 %include 'mobj.asm'
 %include 'score.asm'
+%include 'messagescreen.asm'
 
 section .bss
 
@@ -49,6 +56,8 @@ drop_initial_velocity: resw 1
 ; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
 keyconditions: resb NUM_KEYS
 breaking_keys_framecount: resw 1
+max_broken_keys: resb 1
+num_broken_keys: resb 1
 
 section .data
 
@@ -70,7 +79,9 @@ first16x16_tile:
 
 first8x8_tile:
 
-teststr: db 'Hello',0
+images:
+	inc_resource game
+	inc_resource over
 
 section .bss
 
@@ -96,26 +107,102 @@ start:
 	call initvlib
 	call setvidmode
 	call setupVRAMpointer
-	mov al, 0
+	mov al, 0 ; english
 	call lang_select
 
 	call setupVRAMpointer
 
 	call glp_init ; Init gameloop
-	call gameInitDropObjects ; Init game variables/state
-	call gamePrepareNew
 
+.title:
+	; TODO
+
+.game:
+	call gamePrepareNew
 	; Set gameloop hooks
 	call glp_clearHooks
-	glp_setHook(glp_hook_esc, glp_end) ; ESC quits game
+	glp_setHook(glp_hook_esc, onESCpressed)
 	glp_setHook(glp_hook_trigger_pulled, onTriggerPulled)
 	glp_setHook(glp_hook_vert_retrace, onVerticalRetrace)
-
-
+.next_level:
 	; Run the gameloop
 	call glp_run
-	jmp exit
 
+	; Value passed to glp_end placed in AX by gpl_run. Act according
+	; to the reason why the game loop stopped
+	cmp ax, RETVAL_USER_QUIT
+	jz exit
+	cmp ax, RETVAL_GAMEOVER
+	jz .gameover
+
+	; otherwise, this will be RETVAL_WON
+	jmp .next_level
+
+.gameover:
+	mov cx, effect_height(200)
+	call eff_checkboard
+
+	getStrDX str_computer_useless
+	mov ax, SCREEN_WIDTH/2
+	call subHalfStrwidthFromAX
+	mov bx, 50
+	call drawString
+
+	getStrDX str_gameover_message
+	mov ax, SCREEN_WIDTH/2
+	call subHalfStrwidthFromAX
+	add bx, 10
+	call drawString
+
+	mov si, res_game
+	mov ax, 24
+	mov bx, 100-16
+	mov cx, 128
+	mov dx, 32
+	call blit_imageXY
+
+	add ax, 128+16
+	mov si, res_over
+	call blit_imageXY
+
+	call flushkeyboard
+	call waitPressSpace
+
+	jmp .title
+
+	;;;;; onESCpressed
+	;
+	; Called by the gameloop when the ESC key is pressed
+	;
+onESCpressed:
+	push ax
+	push cx
+	push dx
+
+	call messageScreen_start
+.ask_again:
+	getStrDX str_end_game
+	call messageScreen_drawText_prepare
+	mov cx, 0 ; default no
+	call askYesNoQuestion ; CF set if ESC was pressed. CX = 0 for no
+	jc .ask_again
+	call messageScreen_end
+	and cx,cx
+	jz .done
+	; ESC quits game
+	mov ax, RETVAL_USER_QUIT
+	call glp_end
+.done:
+	pop dx
+	pop cx
+	pop ax
+	ret
+
+
+	;;;;; onTriggerPulled
+	;
+	; Called by the gameloop when the trigger is pulled
+	;
 onTriggerPulled:
 	; Start by hiding all droplets
 	call gameEraseDropObjects
@@ -168,6 +255,16 @@ onVerticalRetrace:
 	call gameDropSchedulerTick
 
 	call gameDrawScore
+
+	; If there are too many broken keys, game over
+	mov al, [max_broken_keys]
+	cmp [num_broken_keys], al
+	jle .continue
+	; Too many? Cause the game loop to end with game over
+	mov ax, RETVAL_GAMEOVER
+	call glp_end
+
+.continue:
 
 	ret
 
@@ -281,6 +378,8 @@ gameEventObjectReachedFloor:
 	; Start the breaking animation
 	mov byte [keyconditions + bx], 1
 
+	; Broken key counter updated once animation ends
+
 	;call score_add100
 .ignore:
 	pop si
@@ -336,6 +435,8 @@ gameAnimateBreakingKeys:
 	cmp ax, 5
 	jl .moretogo
 	mov byte [bx], 0xff ; Broken key
+	; count this key
+	inc byte [num_broken_keys]
 	jmp .next
 
 .moretogo:
@@ -517,11 +618,13 @@ gamePrepareNew:
 	mov word [keyconditions + bx], 0 ; fine
 	add bx, 2
 	loop .lp2
+	mov byte [num_broken_keys], 0
 
 	; Initialize difficulty variables
 	mov word [dropscheduler_framecount_top], 60 ; 1 per second
 	mov word [dropscheduler_framecount], 0
-	mov word [drop_initial_velocity], 1
+	mov word [drop_initial_velocity], 12
+	mov byte [max_broken_keys], 5
 
 	mov bx, [drop_initial_velocity]
 	call gameInitDropObjects

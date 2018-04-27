@@ -605,7 +605,6 @@ askYesNoQuestion:
 	push bx
 	push dx
 
-;	call waitVertRetrace
 	call drawString
 	push bx
 	push cx
@@ -629,7 +628,6 @@ askYesNoQuestion:
 	push ax
 
 _ayn_again:
-	call waitVertRetrace
 	test word [yesno_question_loopcallback], 0xffff
 	jz _ayn_no_callback
 	call [yesno_question_loopcallback]
@@ -650,9 +648,9 @@ _ayn_no_callback:
 	cmp al, [lang_yes_keys+1]
 	je _ayn_yes
 
-	cmp al, 'n'
+	cmp al, [lang_no_keys]
 	je _ayn_no
-	cmp al, 'N'
+	cmp al, [lang_no_keys+1]
 	je _ayn_no
 	cmp al, 27
 	jne _ayn_again
@@ -670,7 +668,6 @@ _ayn_yes:
 	pop ax
 	getStrDX str_yes
 ;	mov dx, msg_yes
-	call waitVertRetrace
 	call drawString
 	mov cx, 1
 	clc
@@ -680,7 +677,6 @@ _ayn_no:
 	pop ax
 	getStrDX str_no
 ;	mov dx, msg_no
-	call waitVertRetrace
 	call drawString
 	mov cx, 0
 	clc

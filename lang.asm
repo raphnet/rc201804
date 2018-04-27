@@ -26,6 +26,9 @@ str_no: resw 1
 lang_yes_keys: resw 1
 lang_no_keys: resw 1
 str_ready: resw 1
+str_end_game: resw 1
+str_gameover_message: resw 1
+str_computer_useless: resw 1
 
 lang_current: resb 1
 
@@ -37,7 +40,7 @@ lang_current: resb 1
 ; 2: 'yY'
 %macro defineCharPair 2
 	push ax
-	mov ax, %1
+	mov ax, %2
 	mov [%1], ax
 	pop ax
 %endmacro
@@ -84,16 +87,21 @@ _first_lang:
 ;
 lang_select:
 	mov [lang_current], al
-	xor ah,ah
 	and al,al
 	jz _lang_fr
 
 _lang_en: ; English language strings
 	mov word [str_empty], empty_string
+	defineCharPair lang_yes_keys, 'yY'
+	defineCharPair lang_no_keys, 'nN'
 	defineString str_yes, "Yes"
 	defineString str_no, "No"
 
 	defineString str_ready, "Ready?"
+	defineString str_end_game, "End game?"
+
+	defineString str_computer_useless, "Your computer is now useless,"
+	defineString str_gameover_message, "you can't even type POKE anymore!"
 
 	ret
 
@@ -104,7 +112,11 @@ _lang_fr: ; French language strings
 	defineString str_yes, "Oui"
 	defineString str_no, "Non"
 
-	defineString str_ready, "ÃŠtes-vous prÃªt?"
+	defineString str_ready, "Êtes-vous prêt?"
+	defineString str_end_game, "Arrêter la partie?"
+
+	defineString str_computer_useless, "Votre ordinateur est inutile,"
+	defineString str_gameover_message, "vous ne pouvez même plus écrire POKE"
 
 	ret
 

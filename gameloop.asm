@@ -13,7 +13,7 @@ cpu 8086
 section .bss
 
 glp_mustrun: resb 1
-
+glp_retval: resw 1
 trig_active: resb 1
 
 _first_hook:
@@ -55,13 +55,21 @@ glp_init:
 
 
 	;;;;; Call from any hook to request exit from gameloop
+	;
+	; A return value can be passed in AX. Then, when glp_run
+	; exits, the gameloop loads this value in AX.
+	;
+	; Useful to act depending on the exit reason.
 glp_end:
+	mov [glp_retval], ax
 	mov byte [glp_mustrun], 0
 	ret
 
 
 	;;;;; Run the gameloop until glp_end is called
 glp_run:
+	push dx
+
 	mov byte [glp_mustrun], 1
 .loop:
 
@@ -107,6 +115,9 @@ glp_run:
 	cmp byte [glp_mustrun], 1
 	je .loop
 
+	mov ax, [glp_retval]
+
+	pop dx
 	ret
 
 ; Do nothing placeholder for unused hooks
