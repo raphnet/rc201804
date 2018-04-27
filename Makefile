@@ -1,14 +1,17 @@
 NASM=nasm
 GRAPHICS_CGA=$(wildcard cga_graphics/*.png)
 GRAPHICS_TGA=$(wildcard tga_graphics/*.png)
+GRAPHICS_VGA16=$(wildcard vga16_graphics/*.png)
 
 GFX_CGA=$(patsubst cga_graphics/%.png,res_cga/%.cga,$(GRAPHICS_CGA))
 GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA))
+GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16))
 
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
 tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_common.asm
+vga16lib=vgalib.asm videolib_common.asm res_vga16/font.bin
 
-all: zapdemo1.com zapdemo2.com vgazap1.com rain.com
+all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com
 
 
 MOUSE_SUPPORT=
@@ -24,12 +27,16 @@ zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
-vgazap1.com: vgazap1.asm vgalib.asm
-	$(NASM) $< -fbin -o $@ -l $@.lst
+vgazap1.com: vgazap1.asm vgalib.asm $(vga16lib)
+	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT -DVISIBLE_MOUSE
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
+	ls -l $@
+
+rainvga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin
+	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT) -DVGA_VERSION -DMOUSE_SUPPORT -DVISIBLE_MOUSE
 	ls -l $@
 
 
@@ -47,10 +54,13 @@ runv1: vgazap1.com vgalib.asm
 runrain: rain.com
 	dosbox -noautoexec -conf tga.dosbox.conf $<
 
+runrainvga: rainvga.com
+	dosbox -noautoexec -conf vga.dosbox.conf $<
+
 release:
 
 clean:
-	rm -f zapdemo1.com $(GFX_CGA) $(GFX_TGA) rescga/* restga/*
+	rm -f zapdemo1.com $(GFX_CGA) $(GFX_TGA) res_cga/* res_tga/* res_vga16/*
 	$(MAKE) -C generators clean
 	$(MAKE) -C font8x8 clean
 	$(MAKE) -C scr clean
@@ -69,10 +79,16 @@ scr/%:
 png2tga/%:
 	$(MAKE) -C png2tga
 
+png2vga16/%:
+	$(MAKE) -C png2vga16
+
 ### Resource conversion
 
 res_tga/%.tga: tga_graphics/%.png png2tga/png2tga
 	./png2tga/png2tga $< $@
+
+res_vga16/%.vga16: vga16_graphics/%.png png2vga16/png2vga16
+	./png2vga16/png2vga16 $< $@
 
 ### Generated files (included from sources)
 
@@ -82,6 +98,9 @@ sinlut.bin: generators/gensinlut
 
 res_cga/cgafont.bin: font8x8/gencga
 	./font8x8/gencga $@
+
+res_vga16/font.bin: font8x8/genvga16
+	./font8x8/genvga16 $@
 
 res_tga/font.bin: font8x8/gentga
 	./font8x8/gentga $@
