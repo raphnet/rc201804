@@ -52,6 +52,8 @@ drop_initial_velocity: resw 1
 ; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
 keyconditions: resb NUM_KEYS
 breaking_keys_framecount: resw 1
+max_broken_keys: resb 1
+num_broken_keys: resb 1
 
 section .data
 
@@ -135,6 +137,18 @@ start:
 .gameover:
 	mov cx, effect_height(200)
 	call eff_checkboard
+
+	getStrDX str_computer_useless
+	mov ax, SCREEN_WIDTH/2
+	call subHalfStrwidthFromAX
+	mov bx, 50
+	call drawString
+
+	getStrDX str_gameover_message
+	mov ax, SCREEN_WIDTH/2
+	call subHalfStrwidthFromAX
+	add bx, 10
+	call drawString
 
 	mov si, res_game
 	mov ax, 24
@@ -237,6 +251,16 @@ onVerticalRetrace:
 	call gameDropSchedulerTick
 
 	call gameDrawScore
+
+	; If there are too many broken keys, game over
+	mov al, [max_broken_keys]
+	cmp [num_broken_keys], al
+	jle .continue
+	; Too many? Cause the game loop to end with game over
+	mov ax, RETVAL_GAMEOVER
+	call glp_end
+
+.continue:
 
 	ret
 
@@ -350,6 +374,8 @@ gameEventObjectReachedFloor:
 	; Start the breaking animation
 	mov byte [keyconditions + bx], 1
 
+	; Broken key counter updated once animation ends
+
 	;call score_add100
 .ignore:
 	pop si
@@ -405,6 +431,8 @@ gameAnimateBreakingKeys:
 	cmp ax, 5
 	jl .moretogo
 	mov byte [bx], 0xff ; Broken key
+	; count this key
+	inc byte [num_broken_keys]
 	jmp .next
 
 .moretogo:
@@ -586,11 +614,13 @@ gamePrepareNew:
 	mov word [keyconditions + bx], 0 ; fine
 	add bx, 2
 	loop .lp2
+	mov byte [num_broken_keys], 0
 
 	; Initialize difficulty variables
 	mov word [dropscheduler_framecount_top], 60 ; 1 per second
 	mov word [dropscheduler_framecount], 0
-	mov word [drop_initial_velocity], 1
+	mov word [drop_initial_velocity], 12
+	mov byte [max_broken_keys], 5
 
 	mov bx, [drop_initial_velocity]
 	call gameInitDropObjects
