@@ -18,8 +18,26 @@ section .text
 	shr %1, 1
 %endmacro
 
+%macro shift_div_32 1
+; On later CPUs, this could be replaced by shr %1, 5
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+	shr %1, 1
+%endmacro
+
 %macro shift_mul_16 1
 ; On later CPUs, this could be replaced by shl %1, 4
+	shl %1, 1
+	shl %1, 1
+	shl %1, 1
+	shl %1, 1
+%endmacro
+
+%macro shift_mul_32 1
+; On later CPUs, this could be replaced by shr %1, 5
+	shl %1, 1
 	shl %1, 1
 	shl %1, 1
 	shl %1, 1
