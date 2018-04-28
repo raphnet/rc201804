@@ -3,8 +3,10 @@ bits 16
 cpu 8086
 
 %define JOYSTICK_PORT	201h
-%define TRIGGER_BIT		0x40
-%define LIGHT_BIT		0x80
+;%define TRIGGER_BIT		0x40
+;%define LIGHT_BIT		0x80
+%define TRIGGER_BIT		0x10
+%define LIGHT_BIT		0x20
 
 ;%define VISIBLE_MOUSE
 

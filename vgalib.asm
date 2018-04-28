@@ -155,6 +155,7 @@ fillRectEven:
 	push di
 
 	; Skip to Y row
+	shl bx, 1
 	add di, [vgarows+bx]
 	; Skip to X position in row : di += ax / 8
 	shift_div_8 ax

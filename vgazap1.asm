@@ -45,6 +45,7 @@ start:
 
 	; This one is just a rectangle that will
 	; not be "targettable"
+	printxy 270,190,"Passive object"
 %define TEST_TARGET_WIDTH	64
 %define TEST_TARGET_HEIGHT	64
 	mov ax, 320-TEST_TARGET_WIDTH/2
@@ -55,9 +56,10 @@ start:
 	call fillRect
 
 	; Draw the real targetable square
+	printxy 116,55,"Shootable object"
 	call restoreTargets
 
-	printxy 0,400,"VGA"
+	printxy 300,0,"VGA Zapdemo 1"
 
 	mov si, first8x8_tile
 	mov ax, 0
