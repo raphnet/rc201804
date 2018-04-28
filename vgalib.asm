@@ -51,17 +51,17 @@ font8x8: incbin "res_vga16/font.bin"
 section .text
 
 %macro setMapMask 1
-	mov dx, VGA_SEQUENCER_PORT
-	mov ax, (%1<<8 | 2)
+	mov dx, VGA_SQ_PORT
+	mov ax, (%1<<8 | VGA_SQ_MAP_MASK_IDX)
 	out dx, ax
 %endmacro
 
 ; Like setMapMask, but DX must be set
-; to VGA_SEQUENCER_PORT first. For slightly
+; to VGA_SQ_PORT first. For slightly
 ; faster repeated calling.
 %macro setMapMask_dxpreset 1
-	;mov dx, VGA_SEQUENCER_PORT
-	mov ax, (%1<<8 | 2)
+	;mov dx, VGA_SQ_PORT
+	mov ax, (%1<<8 | VGA_SQ_MAP_MASK_IDX)
 	out dx, ax
 %endmacro
 
@@ -72,38 +72,37 @@ section .text
 	out dx, ax
 %endmacro
 
-%macro draw_color_to_vram 0
-setMapMask 0x1 ; Blue
+;
+;
+%macro draw_color_to_vram 1 ; bit_mask
+	setMapMask 0xF; all planes
+
+	; write mode 2
+	mov dx, VGA_GC_PORT
+	mov al, VGA_GC_MODE_IDX
+	mov ah, 2
+	out dx, ax
+
+	; Set bit mask
+	;mov dx, VGA_GC_PORT
+	mov ah, %1
+	mov al, VGA_GC_BIT_MASK_IDX
+	out dx, ax
+
 	mov al, [draw_color] ; Load color argument in al
-	and al, 1  ; Mask blue
-	jz %%a ; Zero? All bits are zero. AL is ready
-	mov al, 0xff ; All bits are one
-%%a:
 	mov [es:di], al
 
-	setMapMask 0x2 ; Green
-	mov al, [draw_color] ; Load color argument in al
-	and al, 2  ; Mask green
-	jz %%b ; Zero? All bits are zero. AL is ready
-	mov al, 0xff ; All bits are one
-%%b:
-	mov [es:di], al
+	; write mode
+	;mov dx, VGA_GC_PORT
+	mov al, VGA_GC_MODE_IDX
+	mov ah, 0
+	out dx, ax
 
-	setMapMask 0x4 ; Red
-	mov al, [draw_color] ; Load color argument in al
-	and al, 4  ; Mask red
-	jz %%c ; Zero? All bits are zero. AL is ready
-	mov al, 0xff ; All bits are one
-%%c:
-	mov [es:di], al
+	;mov dx, VGA_GC_PORT
+	mov ah, 0xff
+	mov al, VGA_GC_BIT_MASK_IDX
+	out dx, ax
 
-	setMapMask 0x8 ; Intensity
-	mov al, [draw_color] ; Load color argument in al
-	and al, 8  ; Mask intensity
-	jz %%d ; Zero? All bits are zero. AL is ready
-	mov al, 0xff ; All bits are one
-%%d:
-	mov [es:di], al
 %endmacro
 
 ;;;; setvidemode
@@ -183,7 +182,7 @@ fillRectEven:
 
 	; Take [draw_color] and send the 4 lower bits to the
 	; corresponding planes at address es:di
-	draw_color_to_vram
+	draw_color_to_vram 0xff
 
 	; Read back the address once to fill the latches
 	mov al, [es:di]
@@ -285,7 +284,7 @@ fillRect:
 
 	; Take [draw_color] and send the 4 lower bits to the
 	; corresponding planes at address es:di
-	draw_color_to_vram
+	draw_color_to_vram 0xff
 
 	; Read back the address once to fill the latches
 	mov al, [es:di]
@@ -410,7 +409,7 @@ blit_imageXY:
 
 	; height already placed in DX by caller. But DX is needed for out instruction.
 	mov bp, dx
-	mov dx, VGA_SEQUENCER_PORT
+	mov dx, VGA_SQ_PORT
 	.next_row:
 		mov cl, [image_width_bytes]
 		.lp_in_row:
@@ -490,8 +489,41 @@ getPixel:
 	; TODO
 	ret
 
+	;;;;;; Set the color of a single pixel
+	;
+	; es:di : Video memory base
+	; AX : X coordinate
+	; BX : Y coordinate
+	; DL : Color
 putPixel:
-	; TODO
+	push ax
+	push bx
+	push cx
+	push dx
+	push di
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	mov cx, ax ; save original X first
+	shift_div_8 ax
+	add di, ax
+
+	and cl, 0x7
+	mov bl, 0x80
+	shr bl, cl
+
+	mov [draw_color], dl
+	mov al, [es:di] ; dummy ready
+	draw_color_to_vram bl
+
+	pop di
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+
 	ret
 
 ;;;; getFontTile : Point DS:SI to a given tile ID

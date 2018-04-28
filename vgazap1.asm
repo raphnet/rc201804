@@ -59,7 +59,30 @@ start:
 	printxy 116,55,"Shootable object"
 	call restoreTargets
 
+	;;;; Putpixel tests
+
+	mov dx, 1
+.ar:
+	mov ax, 128 ; X
+	add ax, dx
+	add ax, dx
+	add ax, dx
+	mov bx, 32  ; Y
+	mov cx, 16
+.tt:
+	call putPixel
+	inc bx
+	inc ax
+	loop .tt
+
+	inc dx
+	cmp dx, 15
+	jng .ar
+
+
 	printxy 300,0,"VGA Zapdemo 1"
+
+
 
 	mov si, first8x8_tile
 	mov ax, 0
