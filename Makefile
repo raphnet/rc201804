@@ -27,7 +27,7 @@ zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
-vgazap1.com: vgazap1.asm vgalib.asm $(vga16lib)
+vgazap1.com: vgazap1.asm vgalib.asm $(vga16lib) $(GFX_VGA16)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT -DVISIBLE_MOUSE
 	ls -l $@
 

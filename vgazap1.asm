@@ -19,7 +19,10 @@ section .data
 ; for instance: get16x16TileID (macro) or getTile16 (function)
 first32x32_tile:
 first16x16_tile:
+	inc_resource droplet1
+
 first8x8_tile:
+	times 32 db 0xff
 
 teststr: db 'Hello',0
 
@@ -45,7 +48,7 @@ start:
 %define TEST_TARGET_WIDTH	64
 %define TEST_TARGET_HEIGHT	64
 	mov ax, 320-TEST_TARGET_WIDTH/2
-	mov bx, 480-TEST_TARGET_HEIGHT/2
+	mov bx, 240-TEST_TARGET_HEIGHT/2
 	mov cx, TEST_TARGET_WIDTH
 	mov dx, TEST_TARGET_HEIGHT
 	mov byte [draw_color], 15
@@ -53,6 +56,23 @@ start:
 
 	; Draw the real targetable square
 	call restoreTargets
+
+	printxy 0,400,"VGA"
+
+	mov si, first8x8_tile
+	mov ax, 0
+	mov bx, 0
+	call blit_tile8XY
+
+	mov ax, 16
+	mov bx, 16
+	mov si, res_droplet1
+	call blit_tile16XY
+
+	mov ax, 32
+	mov bx, 32
+	mov si, res_droplet1
+	call blit_tile16XY
 
 mainloop:
 	call waitVertRetrace

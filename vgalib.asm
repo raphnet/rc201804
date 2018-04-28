@@ -8,6 +8,26 @@
 %define SCREEN_HEIGHT	480
 %define SCREEN_WORDS	((SCREEN_WIDTH/16)*SCREEN_HEIGHT)
 
+; Macro to include a resource file. Argument: Resource name. (unquoted)
+;
+; A label matching the resource name prefixed by res_ will be created.
+; The resource will be included using incbin.
+; The full filename will be res_tga/name.tga
+;
+; i.e:
+;   inc_resource droplet
+; would include:
+;	res_vga16/droplet.tga
+; and the label would be:
+; res_droplet:
+%macro inc_resource 1
+res_%1:
+%defstr namestr %1
+%strcat base "res_vga16/" namestr ; Build left part of path
+%strcat filename base ".vga16"
+incbin filename
+%endmacro
+
 section .bss
 
 section .data
@@ -19,6 +39,8 @@ vgarows:
 	dw line*SCREEN_WIDTH/8
 %assign line line+1
 %endrep
+
+font8x8: incbin "res_vga16/font.bin"
 
 section .text
 
@@ -180,7 +202,41 @@ fillRectEven:
 	pop ax
 	ret
 
+;;;;; Write black over a range of scanlines
+;
+; This exists since there is an optimisation opportunity
+; for this case. But right now, it is just a bad wrapper around
+; fillRect...
+;
+; es:di : Video memory base
+; bx: First line
+; cx: Number of lines
+; al: Color (4-bit, right-aligned)
+;
+clearLinesRange:
+	push ax
+	push bx
+	push cx
+	push dx
 
+	mov al, [draw_color]
+	push ax
+
+	mov ax, 0
+	; bx already equals Y
+	; cx already equals H
+	mov dx, SCREEN_WIDTH
+	mov byte [draw_color], 0
+	call fillRect
+
+	pop ax
+	mov [draw_color], al
+
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
 
 	;;;;;
 	; es:di : Video memory base
@@ -200,6 +256,7 @@ fillRect:
 	push di
 
 	; Skip to Y row
+	shl bx, 1
 	add di, [vgarows+bx]
 	; Skip to X position in row : di += ax / 8
 	shift_div_8 ax
@@ -302,7 +359,129 @@ fillScreen:
 	pop ax
 	ret
 
+blit_imageXY:
+	; TODO
+	ret
+
+;;;; blit_tile8XY : Blit a 8x8 tile to a destination coordinate
+;
+; ds:si : Pointer to tile data
+; es:di : Video memory base
+; ax: X coordinate (in pixels) (ANDed with 0xfffc)
+; bx: Y coordinate (in pixels) (ANDed with 0xfffe)
 blit_tile8XY:
+	push ax
+	push bx
+	push cx
+	push dx
+	push si
+	push di
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	shift_div_8 ax
+	add di, ax
+
+	mov cx, 8
+.lp:
+	setMapMask 0x1 ; Blue
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x2 ; Green
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x4 ; Red
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x8 ; Intensity
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	add di, 640/8 ; next block of 8 pixels
+	loop .lp
+
+	pop di
+	pop si
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+
+blit_tile16XY:
+	; TODO
+
+	push ax
+	push bx
+	push cx
+	push dx
+	push si
+	push di
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	shift_div_8 ax
+	add di, ax
+
+	mov cx, 16
+.lp:
+	setMapMask 0x1 ; Blue
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x2 ; Green
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x4 ; Red
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x8 ; Intensity
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	inc di
+
+	setMapMask 0x1 ; Blue
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x2 ; Green
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x4 ; Red
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+	setMapMask 0x8 ; Intensity
+	lodsb ; AL = DS:SI
+	es mov [di], al
+
+
+	add di, 640/8 - 1 ; next block of 8 pixels
+	loop .lp
+
+	pop di
+	pop si
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+
+
+	ret
+
+getPixel:
 	; TODO
 	ret
 
@@ -310,12 +489,45 @@ putPixel:
 	; TODO
 	ret
 
-blit_imageXY:
-	; TODO
+;;;; getFontTile : Point DS:SI to a given tile ID
+; Ascii in AL (range 32 - 255)
+getFontTile:
+	push ax
+	push cx
+
+	xor ah,ah
+	sub al, 32
+	mov cl, 5
+	shl ax, cl
+	add ax, font8x8
+	mov si, ax
+
+	pop ax
+	pop cx
+
 	ret
 
-getFontTile:
-	; TODO
+	;;;;;;;;;;;;;;
+	; getTile32 : Points DS:SI to a given tile ID
+	; Tile ID in AX
+getTile32:
+	push ax
+	push cx
+
+	mov cl, 9 ; Multiply by 512
+	shl ax, cl
+	add ax, first32x32_tile
+	mov si, ax
+
+	pop cx
+	pop ax
+	ret
+
+
+savescreen:
+	ret
+
+restorescreen:
 	ret
 
 
