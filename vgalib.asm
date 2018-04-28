@@ -547,6 +547,6 @@ initvlib:
 	call initvlib_common
 	ret
 
-
+%include 'vgalib_effects.asm'
 
 %endif
