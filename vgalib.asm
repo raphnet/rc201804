@@ -485,8 +485,80 @@ blit_tile16XY:
 	pop cx
 	ret
 
+	;;;;;; Get the color of a single pixel
+	;
+	; Args:
+	;   es:di : Video memory base
+	;   AX : X coordinate
+	;   BX : Y coordinate
+	;
+	; Return:
+	;   DX : Color
+	;   Incidently, the zero flag is set if pixel is zero.
 getPixel:
-	; TODO
+	push ax
+	push bx
+	push cx
+	push di
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	mov cx, ax ; save original X first
+	shift_div_8 ax
+	add di, ax
+
+	and cl, 0x7
+	mov bl, 0x80
+	shr bl, cl ; BL will be used to mask the pixel
+
+	xor bh, bh ; Color will be built in BH
+
+	; Note: Read mode 0 assumed
+	mov dx, VGA_GC_PORT
+	mov al, VGA_GC_READ_MAP_SEL_IDX
+
+
+	mov ah, 0 ; plane number (blue)
+	out dx, ax
+	mov cl, [es:di] ; Read 8 pixels
+	and cl, bl ; Mask ours
+	jz .a
+	or bh, 0x01
+.a:
+
+	mov ah, 1 ; plane number (green)
+	out dx, ax
+	mov cl, [es:di] ; Read 8 pixels
+	and cl, bl ; Mask ours
+	jz .b
+	or bh, 0x02
+.b:
+
+	mov ah, 2 ; plane number (red)
+	out dx, ax
+	mov cl, [es:di] ; Read 8 pixels
+	and cl, bl ; Mask ours
+	jz .c
+	or bh, 0x04
+.c:
+
+	mov ah, 3 ; plane number (intensity)
+	out dx, ax
+	mov cl, [es:di] ; Read 8 pixels
+	and cl, bl ; Mask ours
+	jz .d
+	or bh, 0x08
+.d:
+
+	mov dl, bh
+	and dl, dl ; return with ZF set if black
+
+	pop di
+	pop cx
+	pop bx
+	pop ax
 	ret
 
 	;;;;;; Set the color of a single pixel
