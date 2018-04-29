@@ -134,7 +134,9 @@ start:
 	call lang_select
 
 	call setupVRAMpointer
+%ifdef MOUSE_SUPPORT
 	call mouse_init
+%endif
 	call mouse_show
 	call glp_init ; Init gameloop
 

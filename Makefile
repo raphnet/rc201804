@@ -29,7 +29,7 @@ vgazap1.com: vgazap1.asm zapper.asm mouse.asm $(vga16lib) $(GFX_VGA16)
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm lang.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
+	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
 rainvga.com: rain.asm zapper.asm mouse.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin
