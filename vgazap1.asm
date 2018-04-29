@@ -40,7 +40,7 @@ start:
 	call setupVRAMpointer
 
 	; Initialize mouse if enabled, otherwise does nothing.
-	enable_mouse_mode
+	call mouse_init
 	call zapperInit
 
 	; This one is just a rectangle that will
@@ -60,7 +60,6 @@ start:
 	call restoreTargets
 
 	;;;; Putpixel tests
-
 	mov dx, 1
 .ar:
 	mov ax, 128 ; X
@@ -83,6 +82,29 @@ start:
 	printxy 300,0,"VGA Zapdemo 1"
 
 
+	;;;; Get pixel test by copying a 64x64 rectangle
+	mov ax, 128 ; X
+	mov bx, 32   ; Y
+	mov cx, 64
+	mov bp, 64
+
+.cc_outer:
+	mov cx, 64
+.cc_inner:
+	push ax
+	push bx
+	add ax, cx
+	add bx, bp
+	call getPixel
+	add ax, 128 ; Copy with an offset
+	call putPixel
+	pop bx
+	pop ax
+
+	loop .cc_inner
+	dec bp
+	jnz .cc_outer
+
 
 	mov si, first8x8_tile
 	mov ax, 0
@@ -99,6 +121,7 @@ start:
 	mov si, res_droplet1
 	call blit_tile16XY
 
+	call mouse_show
 mainloop:
 	call waitVertRetrace
 	call checkESCpressed
@@ -108,6 +131,7 @@ mainloop:
 	jmp mainloop
 
 trigger_pulled:
+	call mouse_hide
 	call eraseTargets ; Draw black over target
 	call detectLight
 	jnz .miss ; No light should be detected unless a non-target object was pointed
@@ -124,6 +148,7 @@ trigger_pulled:
 
 .done:
 	call restoreTargets
+	call mouse_show
 	call waitTriggerReleased
 	jmp mainloop
 
