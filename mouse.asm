@@ -5,6 +5,7 @@
 %define MOUSEFN_SHOW				0x0001
 %define MOUSEFN_HIDE				0x0002
 %define MOUSEFN_QUERY_BTN_COUNTERS	0x0005
+%define MOUSEFN_SET_POINTER_SHAPE	0x0009
 
 section .data
 
@@ -45,6 +46,10 @@ mouse_init:
 
 	ret
 
+	;;;;;; Hide mouse pointer
+	;
+	;
+	;
 mouse_hide:
 	jmp_mbyte_false [mouse_enabled], .done
 	push ax
@@ -54,6 +59,10 @@ mouse_hide:
 .done:
 	ret
 
+	;;;;;; Show mouse pointer
+	;
+	;
+	;
 mouse_show:
 	jmp_mbyte_false [mouse_enabled], .done
 	push ax
@@ -62,5 +71,31 @@ mouse_show:
 	pop ax
 .done:
 	ret
+
+	;;;;;; Set mouse pointer shape
+	;
+	; DS:SI : Data
+	; BX : Hotspot X
+	; CX : Hotspot Y
+mouse_setpointer:
+	jmp_mbyte_false [mouse_enabled], .done
+
+	push ax
+	push dx
+	push es
+
+	mov ax, MOUSEFN_SET_POINTER_SHAPE
+	mov dx, si
+	push ds
+	pop es
+	int 33h
+
+	pop es
+	pop dx
+	pop ax
+
+.done:
+	ret
+
 
 %endif ; _mouse_asm__

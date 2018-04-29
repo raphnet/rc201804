@@ -106,6 +106,10 @@ images:
 	inc_resource game
 	inc_resource over
 
+mouse_pointer_data: incbin "mousepointer.bin"
+%define MOUSE_POINTER_HOTSPOT_X 7
+%define MOUSE_POINTER_HOTSPOT_Y 8
+
 section .bss
 
 MOBJ_LIST_START droplets
@@ -137,6 +141,10 @@ start:
 %ifdef MOUSE_SUPPORT
 	call mouse_init
 %endif
+	mov si, mouse_pointer_data
+	mov bx, MOUSE_POINTER_HOTSPOT_X
+	mov cx, MOUSE_POINTER_HOTSPOT_Y
+	call mouse_setpointer
 	call mouse_show
 	call glp_init ; Init gameloop
 

@@ -29,11 +29,11 @@ vgazap1.com: vgazap1.asm zapper.asm mouse.asm $(vga16lib) $(GFX_VGA16)
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm lang.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst
+	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 
-rainvga.com: rain.asm zapper.asm mouse.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT -DVISIBLE_MOUSE
+rainvga.com: rain.asm zapper.asm mouse.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin mousepointer.bin
+	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 
 
@@ -58,6 +58,9 @@ release:
 
 clean:
 	rm -f zapdemo1.com $(GFX_CGA) $(GFX_TGA) res_cga/* res_tga/* res_vga16/*
+	$(MAKE) -C png2tga clean
+	$(MAKE) -C png2vga16 clean
+	$(MAKE) -C png2mp clean
 	$(MAKE) -C generators clean
 	$(MAKE) -C font8x8 clean
 	$(MAKE) -C scr clean
@@ -79,6 +82,9 @@ png2tga/%:
 png2vga16/%:
 	$(MAKE) -C png2vga16
 
+png2mp/%:
+	$(MAKE) -C png2mp
+
 ### Resource conversion
 
 res_tga/%.tga: tga_graphics/%.png png2tga/png2tga
@@ -86,6 +92,9 @@ res_tga/%.tga: tga_graphics/%.png png2tga/png2tga
 
 res_vga16/%.vga16: vga16_graphics/%.png png2vga16/png2vga16
 	./png2vga16/png2vga16 $< $@
+
+mousepointer.bin: mousepointer.png png2mp/png2mp
+	./png2mp/png2mp $< $@
 
 ### Generated files (included from sources)
 
