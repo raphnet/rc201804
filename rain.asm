@@ -2,14 +2,18 @@ org 100h
 bits 16
 cpu 8086
 
+%define KEY_WIDTH 32
+%define KEY_HEIGHT 32
+%define DROP_WIDTH 16
+%define DROP_HEIGHT 16
 
 %define FIRST_KEY_X	0
-%define FIRST_KEY_Y (200-32)
-%define NUM_KEYS (320/32)
+%define FIRST_KEY_Y (SCREEN_HEIGHT-KEY_HEIGHT)
+%define NUM_KEYS (SCREEN_WIDTH/KEY_WIDTH)
 %define DROP_FLOOR_Y (FIRST_KEY_Y-16)
 %define DROPS_INITIAL_Y 16
-%define DROP0_X	8
-%define DROPS_X_PITCH 32
+%define DROP0_X	((KEY_WIDTH/2)-(DROP_WIDTH/2))
+%define DROPS_X_PITCH KEY_WIDTH
 %define MAX_DROPS	NUM_KEYS
 
 ; All labels on the first line
@@ -22,7 +26,24 @@ cpu 8086
 %define SCORE_X PLAYER_LABEL_X
 %define SCORE_Y 10
 
+; Gameover messages
+%define GAMEOVER_KEYS_Y			((SCREEN_HEIGHT/2)-16-18)
+%define GAMEOVER_MESSAGE_Y		((SCREEN_HEIGHT/2)+16)
+
+; Difficulty control
+%define DIFF_INITIAL_FRAMECOUNT_TOP	(60*2) ; One drop every 3 second
+%define DIFF_MIN_FRAMECOUNT_TOP 	15 ; 4 per second
+%define DIFF_INITIAL_VELOCITY		1
+%define DIFF_MAX_INITIAL_VELOCITY	32
+%define DIFF_MAX_BROKEN_KEYS		3
+%define DIFF_INCREASE_INITIAL_VELOCITY_EVERY	5 ; every 5 ticks
+; The initial limit of simultaneous drops on screen
+%define DIFF_INITIAL_MAX_ACTIVE_DROPS	3
+; Maximum simultaneous drops on screen
+%define DIFF_MAXIMUM_ACTIVE_DROPS	6
+
 %define NO_ACCELERATION
+;%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
 %define RETVAL_WON			0
@@ -52,6 +73,8 @@ section .bss
 dropscheduler_framecount_top: resw 1
 dropscheduler_framecount: resw 1
 drop_initial_velocity: resw 1
+cnt_next_initvel_incr: resw 1
+max_active_drops: resb 1
 
 ; 0: Fine, 1-5: Breaking, ff: Broken (animation done)
 keyconditions: resb NUM_KEYS
@@ -149,7 +172,7 @@ start:
 	getStrDX str_computer_useless
 	mov ax, SCREEN_WIDTH/2
 	call subHalfStrwidthFromAX
-	mov bx, 50
+	mov bx, GAMEOVER_MESSAGE_Y
 	call drawString
 
 	getStrDX str_gameover_message
@@ -159,8 +182,8 @@ start:
 	call drawString
 
 	mov si, res_game
-	mov ax, 24
-	mov bx, 100-16
+	mov ax, (SCREEN_WIDTH/2-(128+16+128)/2)
+	mov bx, GAMEOVER_KEYS_Y
 	mov cx, 128
 	mov dx, 32
 	call blit_imageXY
@@ -269,9 +292,10 @@ onVerticalRetrace:
 	cmp [num_broken_keys], al
 	jle .continue
 	; Too many? Cause the game loop to end with game over
+%ifndef NO_LOOSING
 	mov ax, RETVAL_GAMEOVER
 	call glp_end
-
+%endif
 .continue:
 
 	ret
@@ -389,7 +413,12 @@ gameEventObjectReachedFloor:
 	; Broken key counter updated once animation ends
 
 	;call score_add100
+	;call gameIncreaseDifficultyTick
+
 .ignore:
+
+	call gameIncreaseDifficultyTick
+
 	pop si
 	pop bx
 	pop ax
@@ -476,6 +505,10 @@ gameEventObjectHit:
 	; TODO Score? Count? Increase difficulty?
 	call score_add100
 
+	call gameIncreaseDifficultyTick
+
+	;mov word [dropscheduler_framecount], 0 ; force new drop now
+
 	ret
 
 
@@ -500,8 +533,15 @@ gameDropSchedulerTick:
 	; Ok, it's time to spawn a new droplet!
 .time_for_newdrop:
 	; Reset the counter
-	mov ax, [dropscheduler_framecount_top]
-	mov [dropscheduler_framecount], ax
+	mov bx, [dropscheduler_framecount_top]
+
+	; Add some random time to next target, to break rhythm
+	mov al, 0
+	mov ah, 30
+	call getRandom8
+	add bx, ax
+
+	mov [dropscheduler_framecount], bx
 
 	; There are as many dropX objects as there are keys.
 	; We can only have one drop falling above a given key.
@@ -516,6 +556,13 @@ count_inactive_drops:
 	; Give up if all slots are busy
 	test ah, 0xff
 	jz game_drop_scheduler_tick_done
+	; Also give up if too many drops
+	mov al, NUM_KEYS
+	sub al, [max_active_drops]
+	;cmp ah, NUM_KEYS-MAX_ACTIVE_DROPS
+	cmp ah, al
+	jle game_drop_scheduler_tick_done
+
 
 	; Otherwise, select a new one at random
 spawn_new_drop:
@@ -537,6 +584,56 @@ spawn_new_drop:
 	MOBJ_NEXT
 game_drop_scheduler_tick_done:
 	pop bx
+	pop ax
+	ret
+
+
+	;;;;;; gameIncreaseDifficultyTick
+	;
+	; Called to increase game difficulty each time
+	; a droplet is hit or a key gets broken (in other words,
+	; once in the life of every droplet)
+	;
+gameIncreaseDifficultyTick:
+	push ax
+
+	; Increase the rate of appearance of new drops
+	cmp word [dropscheduler_framecount_top], DIFF_MIN_FRAMECOUNT_TOP
+	jle .max_rate_reached
+	sub word [dropscheduler_framecount_top], 5
+.max_rate_reached:
+
+	; Increase initial velocity every N ticks
+	inc word [cnt_next_initvel_incr]
+	cmp word [cnt_next_initvel_incr], DIFF_INCREASE_INITIAL_VELOCITY_EVERY
+	jl .no_initvel_incr
+
+	; Random initial value for next count
+	mov al, 0
+	mov ah, DIFF_INCREASE_INITIAL_VELOCITY_EVERY/2
+	call getRandom8
+	mov word [cnt_next_initvel_incr], ax
+
+
+	; Ok, time to incrase (multiply by 1.5)
+	mov ax, [drop_initial_velocity]
+	shr ax, 1
+	or ax, 1 ; make sure to increase even when initial value is 1
+	add word [drop_initial_velocity], ax
+
+	; Impose a maximum
+	cmp word [drop_initial_velocity], DIFF_MAX_INITIAL_VELOCITY
+	jl .done
+	; max reached, clamp it to DIFF_MAX_INITIAL_VELOCITY
+	mov word [drop_initial_velocity], DIFF_MAX_INITIAL_VELOCITY
+
+	cmp byte [max_active_drops], DIFF_MAXIMUM_ACTIVE_DROPS
+	jge .done
+
+	inc byte [max_active_drops]
+
+.no_initvel_incr:
+.done:
 	pop ax
 	ret
 
@@ -629,10 +726,12 @@ gamePrepareNew:
 	mov byte [num_broken_keys], 0
 
 	; Initialize difficulty variables
-	mov word [dropscheduler_framecount_top], 60 ; 1 per second
+	mov word [dropscheduler_framecount_top], DIFF_INITIAL_FRAMECOUNT_TOP
 	mov word [dropscheduler_framecount], 0
-	mov word [drop_initial_velocity], 12
-	mov byte [max_broken_keys], 5
+	mov word [drop_initial_velocity], DIFF_INITIAL_VELOCITY
+	mov byte [max_broken_keys], DIFF_MAX_BROKEN_KEYS
+	mov word [cnt_next_initvel_incr], 0x0000
+	mov byte [max_active_drops], DIFF_INITIAL_MAX_ACTIVE_DROPS
 
 	mov bx, [drop_initial_velocity]
 	call gameInitDropObjects
