@@ -1,13 +1,14 @@
 %ifndef _score_asm
 %define _score_asm
 
-%define SCORE_DIGITS	7
+%define SCORE_DIGITS	5
 
 section .bss
 
 ; Unpacked BDC format. Least significant digit first.
 score: resb SCORE_DIGITS
 score_increment: resb SCORE_DIGITS
+high_score: resb SCORE_DIGITS
 
 ;; Macro to set all score_increment digits to zero
 ;
@@ -18,6 +19,15 @@ score_increment: resb SCORE_DIGITS
 %assign i i+1
 %endrep
 %endmacro
+
+%macro SCORE_ZERO_HIGH 0
+%assign i 0
+%rep SCORE_DIGITS
+	mov byte [high_score+i], 0
+%assign i i+1
+%endrep
+%endmacro
+
 
 ;; Macro to set the score increment
 ;
@@ -35,6 +45,17 @@ SCORE_ZERO_INCREMENT
 %rotate 1
 %endrep
 %endmacro
+
+%macro SCORE_SET_HIGH 0-SCORE_DIGITS
+SCORE_ZERO_HIGH
+%assign i %0-1
+%rep %0
+	mov byte [high_score+i], %1
+%assign i i-1
+%rotate 1
+%endrep
+%endmacro
+
 
 section .text
 
@@ -85,6 +106,59 @@ score_add100:
 score_add1000:
 	SCORE_SET_INCREMENT 1,0,0,0
 	call score_add
+	ret
+
+	;;;;;; score_copyToHigh
+	;
+	; Copy the current score to the high score
+	;
+score_copyToHigh:
+	push ax
+	push bx
+
+	mov bx, 0
+.lp:
+	mov al, [score + bx]
+	mov [high_score + bx], al
+
+	inc bx
+	cmp bx, SCORE_DIGITS
+	jl .lp
+
+	pop bx
+	pop ax
+	ret
+
+	;;;;;; score_greaterThanHigh
+	;
+	; Return with carry set if current score is greater than high score
+	;
+score_greaterThanHigh:
+	push ax
+	push bx
+
+	mov bx, SCORE_DIGITS-1
+.lp:
+	mov al, [bx + score]
+	mov ah, [bx + high_score]
+	cmp al,ah
+	jg .greater
+	jl .lesser
+	; equal digit? continue
+	dec bx
+	jnz .lp
+
+	; equality
+	jmp .lesser
+
+.greater:
+	stc
+	jmp .return
+.lesser:
+	clc
+.return:
+	pop bx
+	pop ax
 	ret
 
 %endif ; _score_asm

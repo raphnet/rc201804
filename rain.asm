@@ -18,12 +18,13 @@ cpu 8086
 
 ; All labels on the first line
 %define LABELS_Y		0
-%define PLAYER_LABEL_X	0
-%define LEVEL_LABEL_X	144
+%define SCORE_LABEL_X	0
+%define HIGH_LABEL_X	64
 %define MISSES_LABEL_X	256
 
-; The score, below the player
-%define SCORE_X PLAYER_LABEL_X
+; The scores, below the labels
+%define SCORE_X SCORE_LABEL_X
+%define HIGH_SCORE_X HIGH_LABEL_X
 %define SCORE_Y 10
 
 ; Gameover messages
@@ -42,7 +43,7 @@ cpu 8086
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
 
-%define NO_ACCELERATION
+;%define NO_ACCELERATION
 ;%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
@@ -202,6 +203,19 @@ start:
 	mov si, res_over
 	call blit_imageXY
 
+
+	call score_greaterThanHigh
+	jnc .no_new_high_score
+
+	getStrDX str_new_high_score
+	mov ax, HIGH_SCORE_X
+	mov bx, SCORE_Y + 10
+	call drawString
+
+	call score_copyToHigh
+	call gameDrawHighScore
+
+.no_new_high_score:
 	call flushkeyboard
 	call waitPressSpace
 
@@ -672,6 +686,32 @@ gameDrawScore:
 
 	ret
 
+	;;;;; gameDrawHighScore
+	;
+	;
+	;
+gameDrawHighScore:
+	push ax
+	push bx
+	push cx
+
+	mov ax, HIGH_SCORE_X
+	mov bx, SCORE_Y
+%assign i SCORE_DIGITS-1
+%rep SCORE_DIGITS
+	mov cl, [high_score + i]
+	add cl, '0'
+	call drawChar
+	add ax, 8
+%assign i i-1
+%endrep
+	pop cx
+	pop bx
+	pop ax
+
+	ret
+
+
 	;;;;; gameInitDropObjects
 	;
 	; BX: Drop initial velocity
@@ -707,9 +747,9 @@ gamePrepareNew:
 	call fillScreen
 
 	; Draw labels
-	printxy PLAYER_LABEL_X,LABELS_Y,"Player 1"
-	printxy LEVEL_LABEL_X,LABELS_Y,"Level"
-	printxy MISSES_LABEL_X,LABELS_Y,"Misses"
+	printxy SCORE_LABEL_X,LABELS_Y,"Score"
+	printxy HIGH_LABEL_X,LABELS_Y,"High"
+	printxy MISSES_LABEL_X,LABELS_Y,"Hits"
 
 	; Draw keyboard keys
 	mov bp, NUM_KEYS
@@ -748,6 +788,8 @@ gamePrepareNew:
 
 	; Zero the score
 	call score_clear
+
+	call gameDrawHighScore
 
 	pop bp
 	pop si

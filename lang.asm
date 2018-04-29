@@ -29,6 +29,7 @@ str_ready: resw 1
 str_end_game: resw 1
 str_gameover_message: resw 1
 str_computer_useless: resw 1
+str_new_high_score: resw 1
 
 lang_current: resb 1
 
@@ -103,6 +104,8 @@ _lang_en: ; English language strings
 	defineString str_computer_useless, "Your computer is now useless,"
 	defineString str_gameover_message, "you can't even type POKE anymore!"
 
+	defineString str_new_high_score, "New high score!"
+
 	ret
 
 _lang_fr: ; French language strings
@@ -117,6 +120,8 @@ _lang_fr: ; French language strings
 
 	defineString str_computer_useless, "Votre ordinateur est inutile,"
 	defineString str_gameover_message, "vous ne pouvez même plus écrire POKE"
+
+	defineString str_new_high_score, "Nouveau record!"
 
 	ret
 
