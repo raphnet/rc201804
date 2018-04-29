@@ -47,8 +47,6 @@ glp_clearHooks:
 	; Clears hooks
 	;
 glp_init:
-	; Initialize mouse if enabled, otherwise does nothing.
-	enable_mouse_mode
 	call zapperInit
 	call glp_clearHooks
 	ret
@@ -89,6 +87,7 @@ glp_run:
 	test al,ah
 	jz .notInRetrace
 
+
 %ifdef ZAPPER_SUPPORT
 	jmp_if_trigger_pulled .pulled
 	jmp .not_pulled
@@ -110,7 +109,6 @@ glp_run:
 	jnc .esc_not_pressed
 	call [glp_hook_esc]
 .esc_not_pressed:
-
 
 	cmp byte [glp_mustrun], 1
 	je .loop
