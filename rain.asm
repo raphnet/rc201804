@@ -111,14 +111,17 @@ start:
 	call lang_select
 
 	call setupVRAMpointer
-
+	call mouse_init
+	call mouse_show
 	call glp_init ; Init gameloop
 
 .title:
 	; TODO
 
 .game:
+	call mouse_hide
 	call gamePrepareNew
+	call mouse_show
 	; Set gameloop hooks
 	call glp_clearHooks
 	glp_setHook(glp_hook_esc, onESCpressed)
@@ -126,6 +129,7 @@ start:
 	glp_setHook(glp_hook_vert_retrace, onVerticalRetrace)
 .next_level:
 	; Run the gameloop
+
 	call glp_run
 
 	; Value passed to glp_end placed in AX by gpl_run. Act according
@@ -205,6 +209,7 @@ onESCpressed:
 	;
 onTriggerPulled:
 	; Start by hiding all droplets
+	call mouse_hide
 	call gameEraseDropObjects
 	call detectLight
 	jnz .miss ; All objects are black. No light should be seen.
@@ -226,10 +231,12 @@ onTriggerPulled:
 
 	; Force redraw of all objects
 	call gameDrawDropObjects
+	call mouse_show
 	ret
 
 .miss:
 	call gameDrawDropObjects
+	call mouse_show
 	ret
 
 	;;;;; Gameloop callback : Vertical retrace started
@@ -242,8 +249,11 @@ onVerticalRetrace:
 	;; and drawing!
 
 	; Erase and redraw objects that moved
+	call mouse_hide
 	call gameRedrawMovedObjects
 	call gameAnimateBreakingKeys
+	call gameDrawScore
+	call mouse_show
 
 	;; Now compute positions for next frame and run game logic
 
@@ -253,8 +263,6 @@ onVerticalRetrace:
 	; Run the drop scheduler to "spawn" new raindrops, according
 	; to elapsed time and game level
 	call gameDropSchedulerTick
-
-	call gameDrawScore
 
 	; If there are too many broken keys, game over
 	mov al, [max_broken_keys]

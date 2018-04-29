@@ -14,9 +14,6 @@ vga16lib=vgalib.asm videolib_common.asm res_vga16/font.bin vgaregs.asm
 all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com
 
 
-MOUSE_SUPPORT=
-#MOUSE_SUPPORT=-DMOUSE_SUPPORT
-
 ### Executables
 
 zapdemo1.com: zapdemo1.asm zapper.asm gameloop.asm zapdemo1.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
@@ -27,16 +24,16 @@ zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
-vgazap1.com: vgazap1.asm vgalib.asm $(vga16lib) $(GFX_VGA16)
-	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT -DVISIBLE_MOUSE
+vgazap1.com: vgazap1.asm zapper.asm mouse.asm $(vga16lib) $(GFX_VGA16)
+	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
 rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm lang.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
-rainvga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin
-	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT) -DVGA_VERSION -DMOUSE_SUPPORT -DVISIBLE_MOUSE
+rainvga.com: rain.asm zapper.asm mouse.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin
+	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT -DVISIBLE_MOUSE
 	ls -l $@
 
 

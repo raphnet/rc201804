@@ -2,13 +2,13 @@ org 100h
 bits 16
 cpu 8086
 
+%include 'mouse.asm'
+
 %define JOYSTICK_PORT	201h
 ;%define TRIGGER_BIT		0x40
 ;%define LIGHT_BIT		0x80
 %define TRIGGER_BIT		0x10
 %define LIGHT_BIT		0x20
-
-;%define VISIBLE_MOUSE
 
 ; Jump to label if trigger pulled.
 %macro jmp_if_trigger_pulled	1
@@ -17,11 +17,7 @@ cpu 8086
 	push cx
 	push dx
 
-
-%ifdef MOUSE_SUPPORT
-	cmp byte [mousemode], 0
-	jne %%mouse
-%endif
+	jmp_mbyte_true [mouse_enabled], %%mouse
 
 	; Trigger from joystick button (normal)
 %%joystick:
@@ -30,14 +26,12 @@ cpu 8086
 	test al, TRIGGER_BIT
 	jmp %%done
 
-%ifdef MOUSE_SUPPORT
 	; Trigger from left mouse button (mouse mode)
 %%mouse:
-	mov ax, 0x0005
+	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
 	int 33h
 	xor ax, 0xffff ; Invert logic (be active low like joystick)
 	test ax, 0x0001 ; Left button
-%endif
 
 %%done:
 	pop dx
@@ -47,12 +41,7 @@ cpu 8086
 	jz %1 ; Active low trigger
 %endmacro
 
-%define enable_mouse_mode	mov byte [mousemode], 1
-%define disable_mouse_mode	mov byte [mousemode], 0
-
 section .data
-
-mousemode: db 0
 
 section .bss
 
@@ -66,28 +55,6 @@ zapper_last_x: resw 1
 section .text
 
 zapperInit:
-%ifdef MOUSE_SUPPORT
-	push ax
-	push bx
-	cmp byte [mousemode], 0
-	je .done
-	; INT 33,0 : Returns 0xffff in AX if driver installed
-	mov ax, 0x0000
-	int 33h
-	and ax, ax
-	jz .nomouse
-%ifdef VISIBLE_MOUSE
-	mov ax, 0x0001
-	int 33h
-%endif
-	jmp .done
-.nomouse:
-	; Force mouse mode off if not driver is detected
-	mov byte [mousemode], 0
-.done:
-	pop bx
-	pop ax
-%endif
 	ret
 
 waitTriggerReleased:
@@ -126,10 +93,8 @@ zapperComputeRealY:
 	; ZF set if no light was detected.
 	;
 detectLight:
-%ifdef MOUSE_SUPPORT
-	cmp byte [mousemode], 0
-	jnz detectLightMouse
-%endif
+	; If we are using a mouse, jump to the mouse-specific detectLight routine
+	jmp_mbyte_true [mouse_enabled], detectLightMouse
 
 	push ax
 	push bx
@@ -186,7 +151,10 @@ detectLight:
 
 	ret
 
-%ifdef MOUSE_SUPPORT
+	;;;
+	;
+	;
+	;
 detectLightMouse:
 	push ax
 	push bx
@@ -203,22 +171,13 @@ detectLightMouse:
 	test al, ch
 	jnz .loop_wait_retrace_end ; still in retrace
 
-%ifdef VISIBLE_MOUSE
-	mov ax, 0x0002 ; hide mouse cursor
-	int 33h
-%endif
-	mov ax, 0x0005
+	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
 	mov bx, 0 ; Left button
 	int 33h
 	; ax : Status
 	; bx : count of button presses
 	; cx : X
 	; dx : Y
-
-	; HACK ! Bug in dosbox perhaps? X coordinates
-	; are scaled in tandy mode...
-	shr cx, 1
-
 
 	; fake vertical timing
 	mov word [zapper_last_start], dx
@@ -239,11 +198,6 @@ detectLightMouse:
 	; Perfect!
 	pushf
 
-%ifdef VISIBLE_MOUSE
-	mov ax, 0x0001 ; show mouse cursor
-	int 33h
-%endif
-
 	; Stop once vertical retrace starts again
 	mov ch, 08h
 	mov dx, 3DAh
@@ -251,7 +205,6 @@ detectLightMouse:
 	in al, dx
 	test al, ch
 	jz .waitRetraceStart ; not in retrace yet
-
 
 	popf
 
@@ -261,4 +214,3 @@ detectLightMouse:
 	pop ax
 
 	ret
-%endif
