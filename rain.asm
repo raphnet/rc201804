@@ -292,7 +292,7 @@ onVerticalRetrace:
 	; If there are too many broken keys, game over
 	mov al, [max_broken_keys]
 	cmp [num_broken_keys], al
-	jle .continue
+	jl .continue
 	; Too many? Cause the game loop to end with game over
 %ifndef NO_LOOSING
 	mov ax, RETVAL_GAMEOVER
