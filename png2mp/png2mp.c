@@ -156,6 +156,7 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 				fwrite(w, 2, 1, fptr_out);
 
 			}
+			ret = 0;
 			break;
 
 		default:
