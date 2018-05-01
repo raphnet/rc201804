@@ -914,6 +914,22 @@ getTile8:
 	ret
 
 
+; Decompress to buffer, then copy to screen
+; Arg 1: compressed data address
+%macro loadScreen 1
+	mov si, %1
+	; ES:DI : Destionation (full screen)
+	mov ax, ds
+	add ax, 0x1000
+	mov es, ax
+	mov di, 0
+	call lz4_decompress
+	; Restore ES:DI
+	call setupVRAMpointer
+	call restorescreen
+%endmacro
+
+
 
 section .data
 

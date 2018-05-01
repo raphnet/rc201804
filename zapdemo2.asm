@@ -37,7 +37,6 @@ start:
 	call setupVRAMpointer
 
 	; Initialize mouse if enabled, otherwise does nothing.
-	enable_mouse_mode
 	call zapperInit
 
 	; Draw a tall rectangle on the left side of the screen

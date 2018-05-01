@@ -41,6 +41,11 @@ str_thanks7: resw 1
 str_thanks8: resw 1
 str_thanks9: resw 1
 
+str_click_mouse_button_or: resw 1
+str_pull_trig_to_start: resw 1
+str_Pull_trig_to_start: resw 1
+str_press_esc_to_quit: resw 1
+
 lang_current: resb 1
 
 ; Macros to set string pointers above. Used by language config code.
@@ -117,7 +122,7 @@ _lang_en: ; English language strings
 	defineString str_new_high_score, "New high score!"
 
 	defineString str_thanks1, "Rain Zapper v1.0"
-	defineString str_thanks2, "Copyright (C) 2018 by Raphael Assenat"
+	defineString str_thanks2, "Copyright (C) 2018 Raphael Assenat"
 	defineString str_thanks3, "Made for RC2018/04"
 	defineString str_thanks4, ""
 	defineString str_thanks5, "Special thanks and greetings to:"
@@ -125,6 +130,11 @@ _lang_en: ; English language strings
 	defineString str_thanks7, " - Jim Leonard for his 8088 LZ4 decompression code"
 	defineString str_thanks8, ""
 	defineString str_thanks9, "Thank you for playing!"
+
+	defineString str_click_mouse_button_or, "Click left mouse button or"
+	defineString str_pull_trig_to_start, "pull the trigger to start playing!"
+	defineString str_Pull_trig_to_start, "Pull the trigger to start playing!"
+	defineString str_press_esc_to_quit, "Press ESC to quit"
 %define NUM_STR_THANKS	9
 
 	ret
@@ -145,7 +155,7 @@ _lang_fr: ; French language strings
 	defineString str_new_high_score, "Nouveau record!"
 
 	defineString str_thanks1, "Rain Zapper v1.0"
-	defineString str_thanks2, "Copyright (C) 2018 by Raphael Assenat"
+	defineString str_thanks2, "Copyright (C) 2018 Raphael Assenat"
 	defineString str_thanks3, "Fait pour RC2018/04"
 	defineString str_thanks4, ""
 	defineString str_thanks5, "Remerciements et salutations:"

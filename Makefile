@@ -4,7 +4,7 @@ GRAPHICS_TGA=$(wildcard tga_graphics/*.png)
 GRAPHICS_VGA16=$(wildcard vga16_graphics/*.png)
 
 GFX_CGA=$(patsubst cga_graphics/%.png,res_cga/%.cga,$(GRAPHICS_CGA))
-GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA))
+GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA)) res_tga/title.lz4
 GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16))
 
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
@@ -85,6 +85,9 @@ png2vga16/%:
 png2mp/%:
 	$(MAKE) -C png2mp
 
+scr/%:
+	$(MAKE) -C scr
+
 ### Resource conversion
 
 res_tga/%.tga: tga_graphics/%.png png2tga/png2tga
@@ -95,6 +98,9 @@ res_vga16/%.vga16: vga16_graphics/%.png png2vga16/png2vga16
 
 mousepointer.bin: mousepointer.png png2mp/png2mp
 	./png2mp/png2mp $< $@
+
+res_tga/%.lz4: res_tga/%.tga scr/scr2lz4
+	./scr/scr2lz4 $< $@
 
 ### Generated files (included from sources)
 

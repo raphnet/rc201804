@@ -11,15 +11,15 @@ cpu 8086
 %define FIRST_KEY_Y (SCREEN_HEIGHT-KEY_HEIGHT)
 %define NUM_KEYS (SCREEN_WIDTH/KEY_WIDTH)
 %define DROP_FLOOR_Y (FIRST_KEY_Y-16)
-%define DROPS_INITIAL_Y 16
+%define DROPS_INITIAL_Y 20
 %define DROP0_X	((KEY_WIDTH/2)-(DROP_WIDTH/2))
 %define DROPS_X_PITCH KEY_WIDTH
 %define MAX_DROPS	NUM_KEYS
 
 ; All labels on the first line
 %define LABELS_Y		0
-%define SCORE_LABEL_X	0
-%define HIGH_LABEL_X	64
+%define SCORE_LABEL_X	20
+%define HIGH_LABEL_X	96
 %define MISSES_LABEL_X	256
 
 ; The scores, below the labels
@@ -30,6 +30,12 @@ cpu 8086
 ; Gameover messages
 %define GAMEOVER_KEYS_Y			((SCREEN_HEIGHT/2)-16-18)
 %define GAMEOVER_MESSAGE_Y		((SCREEN_HEIGHT/2)+16)
+
+; Titlescreen text
+%define INSTRUCTION_3L_Y	165
+%define INSTRUCTION_2L_Y	170
+%define INSTRUCTION_X		24
+%define INSTRUCTION_Y_INCR	10
 
 ; Difficulty control
 %define DIFF_INITIAL_FRAMECOUNT_TOP	(60*2) ; One drop every 3 second
@@ -43,7 +49,7 @@ cpu 8086
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
 
-;%define NO_ACCELERATION
+%define NO_ACCELERATION
 ;%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
@@ -85,6 +91,8 @@ num_broken_keys: resb 1
 
 section .data
 
+mouse_available: db 0
+
 ; Symbols required to reference sprites by their ID.
 ; for instance: get16x16TileID (macro) or getTile16 (function)
 first32x32_tile:
@@ -111,19 +119,17 @@ mouse_pointer_data: incbin "mousepointer.bin"
 %define MOUSE_POINTER_HOTSPOT_X 7
 %define MOUSE_POINTER_HOTSPOT_Y 8
 
+titlescreen: incbin "res_tga/title.lz4"
+
 section .bss
 
 MOBJ_LIST_START droplets
-;mobjarray_start:
 %assign id 1
 %rep MAX_DROPS
-DECLARE_MOBJ(drop%+id)
+	DECLARE_MOBJ(drop%+id)
 %assign id id+1
 %endrep
-;mobjarray_end:
 MOBJ_LIST_END droplets
-
-;%define MOBJ_ARRAY_SIZE ((mobjarray_end - mobjarray_start) / mobj.size)
 
 
 section .text
@@ -135,23 +141,72 @@ start:
 	call initvlib
 	call setvidmode
 	call setupVRAMpointer
-	mov al, 0 ; english
+	mov al, 1 ; english
 	call lang_select
 
 	call setupVRAMpointer
+
+.title:
+
 %ifdef MOUSE_SUPPORT
+	mov byte [mouse_available], 0
 	call mouse_init
-%endif
+	jnz .mouse_unavailable
+.mouse_available:
+	mov byte [mouse_available], 1
 	mov si, mouse_pointer_data
 	mov bx, MOUSE_POINTER_HOTSPOT_X
 	mov cx, MOUSE_POINTER_HOTSPOT_Y
 	call mouse_setpointer
 	call mouse_show
+.mouse_unavailable:
+%endif
+
 	call glp_init ; Init gameloop
 
-.title:
-	; TODO
+	; Display opening screen
+	loadScreen titlescreen
+	; Display instructions
 
+	jmp_mbyte_false [mouse_available], .nomouseoption
+.withmouseoption:
+	mov ax, INSTRUCTION_X
+	mov bx, INSTRUCTION_3L_Y
+
+	getStrDX str_click_mouse_button_or
+	call drawString
+	add bx, INSTRUCTION_Y_INCR
+
+	getStrDX str_pull_trig_to_start
+	call drawString
+	add bx, INSTRUCTION_Y_INCR
+
+	getStrDX str_press_esc_to_quit
+	call drawString
+
+	jmp .instructions_done
+.nomouseoption:
+	mov ax, INSTRUCTION_X
+	mov bx, INSTRUCTION_2L_Y
+	getStrDX str_Pull_trig_to_start
+	call drawString
+	add bx, INSTRUCTION_Y_INCR
+
+	getStrDX str_press_esc_to_quit
+	call drawString
+.instructions_done:
+
+	call waitTriggerOrMouseClick
+	cmp ax, 0x0001
+	je .play_with_mouse
+	cmp ax, 0x0002
+	je exit
+
+
+.play_with_zapper:
+	mov byte [mouse_enabled], 0
+
+.play_with_mouse:
 .game:
 	call mouse_hide
 	call gamePrepareNew
@@ -169,7 +224,7 @@ start:
 	; Value passed to glp_end placed in AX by gpl_run. Act according
 	; to the reason why the game loop stopped
 	cmp ax, RETVAL_USER_QUIT
-	jz exit
+	jz .title
 	cmp ax, RETVAL_GAMEOVER
 	jz .gameover
 
@@ -216,8 +271,7 @@ start:
 	call gameDrawHighScore
 
 .no_new_high_score:
-	call flushkeyboard
-	call waitPressSpace
+	call waitTriggerOrMouseClick
 
 	jmp .title
 
@@ -749,7 +803,7 @@ gamePrepareNew:
 	; Draw labels
 	printxy SCORE_LABEL_X,LABELS_Y,"Score"
 	printxy HIGH_LABEL_X,LABELS_Y,"High"
-	printxy MISSES_LABEL_X,LABELS_Y,"Hits"
+;	printxy MISSES_LABEL_X,LABELS_Y,"Hits"
 
 	; Draw keyboard keys
 	mov bp, NUM_KEYS
@@ -799,12 +853,116 @@ gamePrepareNew:
 	pop ax
 	ret
 
+	;;;;;;; waitTriggerOrMouseClick
+	;
+	; Block execution until the trigger
+	; is pulled or the left mouse button
+	; is clicked.
+	;
+	; Returns 0 in AX for trigger
+	; Returns 1 in AX for mouse
+	; Returns 2 in AX if ESC was pressed
+waitTriggerOrMouseClick:
+	call flushkeyboard
+.loop:
+	call checkESCpressed
+	jc .escape
+
+	; Save mouse enable state to have
+	; jmp_if_trigger_pulled monitor
+	; the trigger.
+	mov al, [mouse_enabled]
+	push ax
+	mov byte [mouse_enabled], 0
+	jmp_if_trigger_pulled .trigger
+	pop ax
+	mov [mouse_enabled], al
+
+	; Check the mouse button ourselves
+	jmp_mbyte_false [mouse_enabled], .loop
+	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
+	int 33h
+	and ax, 0x0001
+	jnz .click
+
+	jmp .loop
+
+.trigger:
+	pop ax
+	mov [mouse_enabled], al
+	mov ax, 0x0000
+	ret
+
+.click:
+	mov ax, 0x0001
+	ret
+
+.escape:
+	mov ax, 0x0002
+	ret
+
+;
+; Output a string using int 10h
+;
+printStr:
+	push ax
+	push bx
+	push cx
+.lp:
+	mov bx, dx
+	mov al, [bx]
+	and al,al
+	jz .done
+
+	mov ah, 0eh
+	mov bh, 0
+	mov cx, 1
+	int 10h
+	inc dx
+	jmp .lp
+.done:
+	pop cx
+	pop bx
+	pop ax
+	ret
+
+;
+;
+;
+printBanner:
+	push ax
+	push bx
+	push dx
+
+
+%assign i 1
+%rep NUM_STR_THANKS
+	; Position cursor
+	mov ah, 02h
+	mov bh, 0
+	mov dh, i-1 ; row
+	mov dl, 0 ; col
+	int 10h
+
+	getStrDX str_thanks%[i]
+	call printStr
+%assign i i+1
+%endrep
+
+
+	pop dx
+	pop bx
+	pop ax
+	ret
 
 ; Restore original video mode,
 ; call dos service to exit
 exit:
+	call mouse_hide
 	call flushkeyboard
 	call restorevidmode
+
+	call printBanner
 
 	mov ah,04CH
 	mov al,00 ; Return 0

@@ -623,13 +623,17 @@ getTile32:
 	pop ax
 	ret
 
-
+; TODO
 savescreen:
 	ret
 
+; TODO
 restorescreen:
 	ret
 
+; TODO
+%macro loadScreen 1
+%endmacro
 
 ; Points ES:DI to the base of video memory.
 ; Must be called before using most of the functions in this library.
