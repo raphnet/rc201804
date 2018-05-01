@@ -10,6 +10,7 @@ GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16))
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
 tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_common.asm
 vga16lib=vgalib.asm videolib_common.asm res_vga16/font.bin vgaregs.asm
+MOUSE=mouse.asm mousepointer.bin
 
 all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com
 
@@ -24,7 +25,7 @@ zapdemo2.com: zapdemo2.asm zapper.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
 	$(NASM) $< -fbin -o $@ -l $@.lst $(MOUSE_SUPPORT)
 	ls -l $@
 
-vgazap1.com: vgazap1.asm zapper.asm mouse.asm $(vga16lib) $(GFX_VGA16)
+vgazap1.com: vgazap1.asm zapper.asm $(vga16lib) $(GFX_VGA16) $(MOUSE)
 	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
@@ -32,7 +33,7 @@ rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm 
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 
-rainvga.com: rain.asm zapper.asm mouse.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin mousepointer.bin
+rainvga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin $(MOUSE)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 

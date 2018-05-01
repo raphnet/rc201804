@@ -933,8 +933,8 @@ getTile8:
 
 section .data
 
-font8x8: incbin "res/tgafont.bin" ; Starts at ASCII 32
-tgarows: incbin "res/tgarows.bin"
+font8x8: incbin "res_tga/font.bin" ; Starts at ASCII 32
+tgarows: incbin "res_tga/rows.bin"
 
 section .bss
 ;screen_backup: resb 320*200/2
