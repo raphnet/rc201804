@@ -24,9 +24,23 @@ section .text
 	; won't have an effect if called. Code doing its own int 33h calls can check
 	; the [mouse_enabled] variable to skip mouse code if necessary.
 	;
+	; Returns with ZF set if a mouse driver was present
+	;
 mouse_init:
 	push ax
 	push bx
+
+	; Read the vector table to check if there seems to be an
+	; handler for interrupt 33h. On my Tandy 1000 EX, this
+	; points at 0x0000. Calling int33h causes a crash.
+	push ds
+	mov ax, 0x0000
+	mov ds, ax
+	mov ax, [33h * 4]
+	mov bx, [33h * 4 + 2]
+	pop ds
+	or ax, bx
+	jz .done
 
 	; INT 33,0 : Returns 0xffff in AX if driver installed
 	mov ax, MOUSEFN_RESET_QUERY
@@ -45,6 +59,7 @@ mouse_init:
 	pop ax
 
 	ret
+
 
 	;;;;;; Hide mouse pointer
 	;
