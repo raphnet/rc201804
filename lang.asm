@@ -31,6 +31,16 @@ str_gameover_message: resw 1
 str_computer_useless: resw 1
 str_new_high_score: resw 1
 
+str_thanks1: resw 1
+str_thanks2: resw 1
+str_thanks3: resw 1
+str_thanks4: resw 1
+str_thanks5: resw 1
+str_thanks6: resw 1
+str_thanks7: resw 1
+str_thanks8: resw 1
+str_thanks9: resw 1
+
 lang_current: resb 1
 
 ; Macros to set string pointers above. Used by language config code.
@@ -106,6 +116,17 @@ _lang_en: ; English language strings
 
 	defineString str_new_high_score, "New high score!"
 
+	defineString str_thanks1, "Rain Zapper v1.0"
+	defineString str_thanks2, "Copyright (C) 2018 by Raphael Assenat"
+	defineString str_thanks3, "Made for RC2018/04"
+	defineString str_thanks4, ""
+	defineString str_thanks5, "Special thanks and greetings to:"
+	defineString str_thanks6, " - Sion for sketching the title screen illustration"
+	defineString str_thanks7, " - Jim Leonard for his 8088 LZ4 decompression code"
+	defineString str_thanks8, ""
+	defineString str_thanks9, "Thank you for playing!"
+%define NUM_STR_THANKS	9
+
 	ret
 
 _lang_fr: ; French language strings
@@ -122,6 +143,16 @@ _lang_fr: ; French language strings
 	defineString str_gameover_message, "vous ne pouvez même plus écrire POKE"
 
 	defineString str_new_high_score, "Nouveau record!"
+
+	defineString str_thanks1, "Rain Zapper v1.0"
+	defineString str_thanks2, "Copyright (C) 2018 by Raphael Assenat"
+	defineString str_thanks3, "Fait pour RC2018/04"
+	defineString str_thanks4, ""
+	defineString str_thanks5, "Remerciements et salutations:"
+	defineString str_thanks6, " - À Sion pour l'esquisse de l'écran d'accueil"
+	defineString str_thanks7, " - À Jim Leonard pour le code de décompression LZ4"
+	defineString str_thanks8, ""
+	defineString str_thanks9, "Merci d'avoir joué!"
 
 	ret
 
