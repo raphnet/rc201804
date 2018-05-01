@@ -1,7 +1,7 @@
 %ifndef _score_asm
 %define _score_asm
 
-%define SCORE_DIGITS	5
+%define SCORE_DIGITS	6
 
 section .bss
 
