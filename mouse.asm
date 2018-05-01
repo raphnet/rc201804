@@ -29,7 +29,7 @@ section .text
 mouse_init:
 	push ax
 	push bx
-%if 0
+%if 1
 	; Read the vector table to check if there seems to be an
 	; handler for interrupt 33h. On my Tandy 1000 EX, this
 	; points at 0x0000. Calling int33h causes a crash.
