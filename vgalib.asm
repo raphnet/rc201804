@@ -608,6 +608,22 @@ getFontTile:
 	ret
 
 	;;;;;;;;;;;;;;
+	; getTile64 : Points SI to a given tile ID
+	; Tile ID in AX
+getTile64:
+	push ax
+	push cx
+
+	mov cl, 11 ; Multiply by 2048
+	shl ax, cl
+	add ax, first32x32_tile
+	mov si, ax
+
+	pop cx
+	pop ax
+	ret
+
+	;;;;;;;;;;;;;;
 	; getTile32 : Points DS:SI to a given tile ID
 	; Tile ID in AX
 getTile32:
