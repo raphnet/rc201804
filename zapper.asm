@@ -194,6 +194,12 @@ detectLightMouse:
 %endif
 
 	call getPixel
+	jnz .light
+	; If no light was found, check one scanline lower. This is for the VGA
+	; version where every other scanline is black.
+	inc bx
+	call getPixel
+.light:
 	; Returns the pixel color in DL, setting the zero flag if color is 0.
 	; Perfect!
 	pushf
