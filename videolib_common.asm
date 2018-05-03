@@ -15,31 +15,6 @@ mov dl, %4
 call putHorizLine
 %endmacro
 
-; Decompress to buffer, then copy to screen
-; Arg 1: compressed data address
-%macro loadScreenCGA 1
-	mov si, %1
-	mov ax, ds
-	mov es, ax
-	mov di, screen_backup
-	call lz4_decompress
-	; Restore ES:DI
-	call setupVRAMpointer
-	call restorescreen
-%endmacro
-%macro loadScreenTGA 1
-	mov si, %1
-	; ES:DI : Destionation (full screen)
-	mov ax, ds
-	add ax, 0x1000
-	mov es, ax
-	mov di, 0
-	call lz4_decompress
-	; Restore ES:DI
-	call setupVRAMpointer
-	call restorescreen
-%endmacro
-
 ;;;; blit_tile8XY_center : Blit a 8x8 tile to a destination coordinate, centered
 ;
 ; ds:si : Pointer to tile data
