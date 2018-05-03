@@ -2,10 +2,17 @@ org 100h
 bits 16
 cpu 8086
 
+%ifdef VGA_VERSION
+%define KEY_WIDTH 64
+%define KEY_HEIGHT 64
+%define DROP_WIDTH 32
+%define DROP_HEIGHT 32
+%else
 %define KEY_WIDTH 32
 %define KEY_HEIGHT 32
 %define DROP_WIDTH 16
 %define DROP_HEIGHT 16
+%endif
 
 %define FIRST_KEY_X	0
 %define FIRST_KEY_Y (SCREEN_HEIGHT-KEY_HEIGHT)
@@ -49,7 +56,7 @@ cpu 8086
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
 
-%define NO_ACCELERATION
+;%define NO_ACCELERATION
 ;%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
@@ -57,6 +64,21 @@ cpu 8086
 %define RETVAL_GAMEOVER		1
 %define RETVAL_USER_QUIT	2
 
+%ifdef VGA_VERSION
+	%macro doBlitDroplet
+		push cx
+		push dx
+		mov dx, 32
+		mov cx, dx
+		call blit_imageXY
+		pop dx
+		pop cx
+	%endmacro
+	%define getKeyTile getTile64
+%else
+	%define doBlitDroplet call blit_tile16XY
+	%define getKeyTile getTile32
+%endif
 
 ;;;; Make sure to jump to main first before includes
 section .text
@@ -106,8 +128,8 @@ first16x16_tile:
 	inc_resource droplet1
 	inc_resource droplet2
 
-	black_tile: times (16*16*2) db 0
-	white_tile: times (16*16*2) db 0xff
+	inc_resource black_droplet
+	inc_resource highlighted_droplet
 
 first8x8_tile:
 
@@ -316,11 +338,11 @@ onTriggerPulled:
 	jnz .miss ; All objects are black. No light should be seen.
 
 	; Now draw each on in white, checking for light.
-	mov si, white_tile
+	mov si, res_highlighted_droplet
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		call blit_tile16XY
+		doBlitDroplet
 		call detectLight
 		jnz .hit ; Only one object can be hit. So it's fine to exit the loop
 	MOBJ_NEXT
@@ -404,7 +426,7 @@ gameDrawDropObjects:
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		call blit_tile16XY
+		doBlitDroplet
 	MOBJ_NEXT
 	ret
 
@@ -413,11 +435,11 @@ gameDrawDropObjects:
 	; Draw black over all drop objects
 	;
 gameEraseDropObjects:
-	mov si, black_tile
+	mov si, res_black_droplet
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		call blit_tile16XY
+		doBlitDroplet
 	MOBJ_NEXT
 	ret
 
@@ -431,14 +453,16 @@ gameRedrawMovedObjects:
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		call mobj_scr_pos_changed
 		jz .skip
+
 		MOBJ_GET_PREV_SCR_X ax, bp
 		MOBJ_GET_PREV_SCR_Y bx, bp
-		mov si, black_tile
-		call blit_tile16XY
+		mov si, res_black_droplet
+		doBlitDroplet
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
 		mov si, res_droplet1
-		call blit_tile16XY
+		doBlitDroplet
+
 %ifndef NO_ACCELERATION
 		inc word [bp + mobj.yvel]
 %endif
@@ -462,8 +486,8 @@ gameEventObjectReachedFloor:
 	; Draw black over it
 	MOBJ_GET_PREV_SCR_X ax, bp
 	MOBJ_GET_PREV_SCR_Y bx, bp
-	mov si, black_tile
-	call blit_tile16XY
+	mov si, res_black_droplet
+	doBlitDroplet
 
 	; Make sure the previous position next time this object is enabled
 	; and drawn is not below the keyboard!
@@ -528,7 +552,7 @@ gameAnimateBreakingKeys:
 	push bx
 	push cx
 		add ax, 1 ; Start from first broken key tile
-		call getTile32 ; returns tile id AX
+		call getKeyTile ; returns tile id AX
 
 		sub bx, keyconditions ; Key index in BX
 		mov al, bl ; Index in AL
@@ -537,8 +561,8 @@ gameAnimateBreakingKeys:
 		add ax, FIRST_KEY_X
 
 		mov bx, FIRST_KEY_Y
-		mov cx, 32
-		mov dx, 32
+		mov cx, KEY_WIDTH
+		mov dx, KEY_HEIGHT
 		call blit_imageXY
 	pop cx
 	pop bx
@@ -577,8 +601,8 @@ gameEventObjectHit:
 	; Draw black over it
 	MOBJ_GET_SCR_X ax, bp
 	MOBJ_GET_SCR_Y bx, bp
-	mov si, black_tile
-	call blit_tile16XY
+	mov si, res_black_droplet
+	doBlitDroplet
 
 	; TODO Score? Count? Increase difficulty?
 	call score_add100
@@ -810,13 +834,13 @@ gamePrepareNew:
 	mov si, res_key_grey
 	mov ax, FIRST_KEY_X
 	mov bx, FIRST_KEY_Y
-	mov cx, 32
-	mov dx, 32
+	mov cx, KEY_WIDTH
+	mov dx, KEY_HEIGHT
 .lp:
 	push bp
 	call blit_imageXY
 	pop bp
-	add ax, 32
+	add ax, KEY_WIDTH
 	dec bp
 	jnz .lp
 
