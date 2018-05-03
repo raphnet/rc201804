@@ -23,9 +23,6 @@ section .data
 ; for instance: get16x16TileID (macro) or getTile16 (function)
 first32x32_tile:
 first16x16_tile:
-	inc_resource droplet1
-	inc_resource droplet2
-
 first8x8_tile:
 
 teststr: db 'Hello',0
