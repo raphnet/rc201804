@@ -3,7 +3,7 @@ GRAPHICS_CGA=$(wildcard cga_graphics/*.png)
 GRAPHICS_TGA=$(wildcard tga_graphics/*.png)
 GRAPHICS_VGA16=$(wildcard vga16_graphics/*.png)
 
-GFX_CGA=$(patsubst cga_graphics/%.png,res_cga/%.cga,$(GRAPHICS_CGA))
+GFX_CGA=$(patsubst cga_graphics/%.png,res_cga/%.cga,$(GRAPHICS_CGA)) res_cga/title.lz4
 GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA)) res_tga/title.lz4
 GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16))
 
@@ -12,7 +12,7 @@ tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_
 vga16lib=vgalib.asm videolib_common.asm res_vga16/font.bin vgaregs.asm
 MOUSE=mouse.asm mousepointer.bin
 
-all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com
+all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com raincga.com
 
 
 ### Executables
@@ -37,6 +37,9 @@ rainvga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(vg
 	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 
+raincga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(cgalib) $(GFX_CGA) sinlut.bin $(MOUSE)
+	$(NASM) $< -fbin -o $@ -l $@.lst -DCGA_VERSION -DMOUSE_SUPPORT
+	ls -l $@
 
 ### Test, deployment and housekeeping
 
@@ -55,10 +58,14 @@ runrain: rain.com
 runrainvga: rainvga.com
 	dosbox -noautoexec -conf vga.dosbox.conf $<
 
+runraincga: raincga.com
+	dosbox -noautoexec -conf cga.dosbox.conf $<
+
 release:
 
 clean:
 	rm -f zapdemo1.com $(GFX_CGA) $(GFX_TGA) res_cga/* res_tga/* res_vga16/*
+	$(MAKE) -C png2cga clean
 	$(MAKE) -C png2tga clean
 	$(MAKE) -C png2vga16 clean
 	$(MAKE) -C png2mp clean
@@ -80,6 +87,9 @@ scr/%:
 png2tga/%:
 	$(MAKE) -C png2tga
 
+png2cga/%:
+	$(MAKE) -C png2cga
+
 png2vga16/%:
 	$(MAKE) -C png2vga16
 
@@ -91,6 +101,9 @@ scr/%:
 
 ### Resource conversion
 
+res_cga/%.cga: cga_graphics/%.png png2cga/png2cga
+	./png2cga/png2cga $< $@
+
 res_tga/%.tga: tga_graphics/%.png png2tga/png2tga
 	./png2tga/png2tga $< $@
 
@@ -99,6 +112,9 @@ res_vga16/%.vga16: vga16_graphics/%.png png2vga16/png2vga16
 
 mousepointer.bin: mousepointer.png png2mp/png2mp
 	./png2mp/png2mp $< $@
+
+res_cga/%.lz4: res_cga/%.cga scr/scr2lz4
+	./scr/scr2lz4 $< $@
 
 res_tga/%.lz4: res_tga/%.tga scr/scr2lz4
 	./scr/scr2lz4 $< $@
@@ -109,7 +125,7 @@ res_tga/%.lz4: res_tga/%.tga scr/scr2lz4
 sinlut.bin: generators/gensinlut
 	./generators/gensinlut $@
 
-res_cga/cgafont.bin: font8x8/gencga
+res_cga/font.bin: font8x8/gencga
 	./font8x8/gencga $@
 
 res_vga16/font.bin: font8x8/genvga16

@@ -87,9 +87,12 @@ jmp start
 ;;;; Includes
 %ifdef VGA_VERSION
 %include 'vgalib.asm'
+%elifdef CGA_VERSION
+%include 'cgalib.asm'
 %else
 %include 'tgalib.asm'
 %endif
+
 %include 'random.asm'
 %define ZAPPER_SUPPORT
 %include 'gameloop.asm'
@@ -126,7 +129,6 @@ first32x32_tile:
 	inc_resource key_brk5
 first16x16_tile:
 	inc_resource droplet1
-	inc_resource droplet2
 
 	inc_resource black_droplet
 	inc_resource highlighted_droplet
@@ -141,7 +143,11 @@ mouse_pointer_data: incbin "mousepointer.bin"
 %define MOUSE_POINTER_HOTSPOT_X 7
 %define MOUSE_POINTER_HOTSPOT_Y 8
 
+%ifdef CGA_VERSION
+titlescreen: incbin "res_cga/title.lz4"
+%else
 titlescreen: incbin "res_tga/title.lz4"
+%endif
 
 section .bss
 
