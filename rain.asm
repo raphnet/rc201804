@@ -56,7 +56,7 @@ cpu 8086
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
 
-;%define NO_ACCELERATION
+%define NO_ACCELERATION
 ;%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
