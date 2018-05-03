@@ -18,9 +18,9 @@ void render(char *bitmap, int val, FILE *out_fptr) {
 			if (set) {
 				//tmp[y+1][x+1] = 2;
 				if (val >= '0' && val <= '9') {
-					tmp[y][x] = 3;
-				} else if (val == '(' || val == ')' || val == ':' || val == '-') {
 					tmp[y][x] = 2;
+				} else if (val == '(' || val == ')' || val == ':' || val == '-') {
+					tmp[y][x] = 3;
 				} else {
 					tmp[y][x] = 1;
 				}
