@@ -235,18 +235,21 @@ clearLinesRange:
 	push cx
 	push dx
 
-	mov al, [draw_color]
+	; Save the draw_color variable
+	mov ah, [draw_color]
 	push ax
 
-	mov ax, 0
+	mov byte [draw_color], al
+
+	mov ax, 0 ; X start
 	; bx already equals Y
-	; cx already equals H
-	mov dx, SCREEN_WIDTH
-	mov byte [draw_color], 0
+	mov dx, cx ; Height in CX (number of lines)
+	mov cx, SCREEN_WIDTH
 	call fillRect
 
+	; Restore the draw_color variable
 	pop ax
-	mov [draw_color], al
+	mov [draw_color], ah
 
 	pop dx
 	pop cx
