@@ -65,7 +65,7 @@ cpu 8086
 %define RETVAL_USER_QUIT	2
 
 %ifdef VGA_VERSION
-	%macro doBlitDroplet
+	%macro doBlitDroplet 0
 		push cx
 		push dx
 		mov dx, 32
@@ -346,8 +346,10 @@ onTriggerPulled:
 	; Now draw each on in white, checking for light.
 	mov si, res_highlighted_droplet
 	MOBJ_LIST_FOREACH_ENABLED droplets
-		MOBJ_GET_SCR_X ax, bp
-		MOBJ_GET_SCR_Y bx, bp
+		; Use previous position as it has not yet been drawn at the new
+		; position that was computed in the previous frame
+		MOBJ_GET_PREV_SCR_X ax, bp
+		MOBJ_GET_PREV_SCR_Y bx, bp
 		doBlitDroplet
 		call detectLight
 		jnz .hit ; Only one object can be hit. So it's fine to exit the loop
@@ -605,9 +607,12 @@ gameEventObjectHit:
 	MOBJ_DISABLE bp
 
 	; Draw black over it
+	mov si, res_black_droplet
+	MOBJ_GET_PREV_SCR_X ax, bp
+	MOBJ_GET_PREV_SCR_Y bx, bp
+	doBlitDroplet
 	MOBJ_GET_SCR_X ax, bp
 	MOBJ_GET_SCR_Y bx, bp
-	mov si, res_black_droplet
 	doBlitDroplet
 
 	; TODO Score? Count? Increase difficulty?
