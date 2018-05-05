@@ -8,36 +8,35 @@ eff_checkboard:
 	push cx
 	push dx
 	push di
+	push bp
 
 	setMapMask 0xF; all planes
 
 	; write mode 2
-	mov dx, VGA_GC_PORT
+	mov dx, VGA_GC_PORT ; Note: DX set here, also re-used below
 	mov al, VGA_GC_MODE_IDX
 	mov ah, 2
 	out dx, ax
 
-
 	mov bp, SCREEN_HEIGHT
 	mov bl, 0x55 ; bit mask
-	mov bh, 0x0 ; color (black)
+	mov bh, 0x0e ; color (black)
+
 .loop:
+		; Set bit mask
+		;mov dx, VGA_GC_PORT
+		not bl ; invert bitmask on each scanline for checkboard effect
+		mov ah, bl ; Bitmask in dh
+		mov al, VGA_GC_BIT_MASK_IDX
+		out dx, ax
+
 		mov cx, SCREEN_WIDTH / 8
+		mov al, bh ; Color in AL for stosb
 .scanline:
-			mov al, [es:di]
-
-			; Set bit mask
-			;mov dx, VGA_GC_PORT
-			mov ah, bl
-			mov al, VGA_GC_BIT_MASK_IDX
-			out dx, ax
-
-			; write color
-			mov [es:di], bh
-
-			inc di
+			mov ah, [es:di]
+			stosb
 		loop .scanline
-		not bl
+
 		dec bp
 	jnz .loop
 
@@ -52,6 +51,7 @@ eff_checkboard:
 	mov al, VGA_GC_BIT_MASK_IDX
 	out dx, ax
 
+	pop bp
 	pop di
 	pop dx
 	pop cx
