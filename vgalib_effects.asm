@@ -1,7 +1,12 @@
 section .text
 
-%define effect_height(h) ((h) * SCREEN_WIDTH / 8)
+; May seem pointless here, but used in CGA and TANDY libs
+%define effect_height(h) (h)
 
+;;;;;; eff_checkboard : Cover the screen with black pixels, in a checkboard pattern.
+;
+; cx : Effect height (See effect_height macro)
+;
 eff_checkboard:
 	push ax
 	push bx
@@ -18,9 +23,10 @@ eff_checkboard:
 	mov ah, 2
 	out dx, ax
 
-	mov bp, SCREEN_HEIGHT
+	;mov bp, SCREEN_HEIGHT
+	mov bp, cx ; Argument: Number of lines to apply the effect on, starting from top of screen
 	mov bl, 0x55 ; bit mask
-	mov bh, 0x0e ; color (black)
+	mov bh, 0x00 ; color (black)
 
 .loop:
 		; Set bit mask
