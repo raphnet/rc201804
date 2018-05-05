@@ -47,7 +47,7 @@ cpu 8086
 ; Difficulty control
 %define DIFF_INITIAL_FRAMECOUNT_TOP	(60*2) ; One drop every 3 second
 %define DIFF_MIN_FRAMECOUNT_TOP 	15 ; 4 per second
-%define DIFF_INITIAL_VELOCITY		1
+%define DIFF_INITIAL_VELOCITY		16
 %define DIFF_MAX_INITIAL_VELOCITY	32
 %define DIFF_MAX_BROKEN_KEYS		3
 %define DIFF_INCREASE_INITIAL_VELOCITY_EVERY	5 ; every 5 ticks
@@ -56,8 +56,8 @@ cpu 8086
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
 
-%define NO_ACCELERATION
-;%define NO_LOOSING
+;%define NO_ACCELERATION
+%define NO_LOOSING
 
 ; Various values used with glp_end for glp_run return value.
 %define RETVAL_WON			0
@@ -260,7 +260,7 @@ start:
 	jmp .next_level
 
 .gameover:
-	mov cx, effect_height(200)
+	mov cx, effect_height(SCREEN_HEIGHT)
 	call eff_checkboard
 
 	getStrDX str_computer_useless
