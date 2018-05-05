@@ -12,6 +12,9 @@ tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_
 vga16lib=vgalib.asm vgalib_effects.asm videolib_common.asm res_vga16/font.bin vgaregs.asm
 MOUSE=mouse.asm mousepointer.bin
 
+# The first dependency must be rain.asm. Other files are there to trigger recompile when modified. (they are all included by rain.asm)
+RAIN_DEPS=rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm sinlut.bin messagescreen.asm lang.asm $(MOUSE)
+
 all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com raincga.com
 
 
@@ -29,15 +32,18 @@ vgazap1.com: vgazap1.asm zapper.asm $(vga16lib) $(GFX_VGA16) $(MOUSE)
 	$(NASM) $< -fbin -o $@ -l $@.lst
 	ls -l $@
 
-rain.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm messagescreen.asm lang.asm random.asm $(tgalib) $(GFX_TGA) sinlut.bin
+# RainZapper : Tandy Version
+rain.com: $(RAIN_DEPS) $(tgalib) $(GFX_TGA)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
 	ls -l $@
 
-rainvga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(vga16lib) $(GFX_VGA16) sinlut.bin $(MOUSE)
+# RainZapper : VGA Version
+rainvga.com: $(RAIN_DEPS) $(vga16lib) $(GFX_VGA16)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DVGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 
-raincga.com: rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm $(cgalib) $(GFX_CGA) sinlut.bin $(MOUSE)
+# RainZapper : CGA Version
+raincga.com: $(RAIN_DEPS) $(cgalib) $(GFX_CGA)
 	$(NASM) $< -fbin -o $@ -l $@.lst -DCGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 
