@@ -36,6 +36,8 @@ image_width_pixels: resw 1
 image_width_bytes: resb 1 ; fits since 640 / 8 = 80
 post_row_di_inc: resw 1
 
+scr_backup_segment: resw 1
+
 section .data
 
 	; Generate a lookup table to multiply by the screen pitch
@@ -639,12 +641,126 @@ getTile32:
 	pop ax
 	ret
 
-; TODO
+;;;;;;;; Copy the screen content to a memory buffer
+;
+; args:
+;    ES  : Base of video memory
+;
 savescreen:
+	push ax
+	push bx
+	push cx
+	push dx
+	push es
+	push di
+	push ds
+	push si
+
+	mov bx, [scr_backup_segment]
+	mov ax, es
+
+	; Source for string copy
+	mov ds, ax
+
+	; Destination for string copy
+	mov es, bx
+	xor di, di
+
+	; Prepare values for OUT instrutions to video adapter
+	mov dx, VGA_GC_PORT
+	mov al, VGA_GC_READ_MAP_SEL_IDX
+
+%macro advES 0
+	; Segment increment after each plane
+	mov bx, es
+	add bx, (SCREEN_WIDTH*SCREEN_HEIGHT)/8/16
+	mov es, bx
+	xor di,di
+%endmacro
+
+%macro cpyPlane 1
+	mov ah, %1 ; plane
+	out dx, ax
+	mov cx, SCREEN_WIDTH*SCREEN_HEIGHT/16
+	xor si, si ; Start from segment:0000
+	rep movsw ; ES:DI <- DS:SI
+%endmacro
+
+	;; Copy each plane
+
+	cpyPlane 0
+	advES
+	cpyPlane 1
+	advES
+	cpyPlane 2
+	advES
+	cpyPlane 3
+
+	pop si
+	pop ds
+	pop di
+	pop es
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+
 	ret
 
-; TODO
+;;;;;;;; Copy the screen content to a memory buffer
+;
+; args:
+;    ES  : Base of video memory
+;
 restorescreen:
+	push ax
+	push bx
+	push cx
+	push dx
+	push es
+	push di
+	push ds
+	push si
+
+	; The source for copy
+	mov bx, [scr_backup_segment]
+	mov ds, bx
+	xor si:si
+
+	; Prepare VGA writes
+	mov dx, VGA_SQ_PORT
+
+%macro restorePlane 1
+	setMapMask_dxpreset %1
+	mov cx, SCREEN_WIDTH*SCREEN_HEIGHT/16
+	xor si, si
+	xor di, di
+	rep movsw ; ES:DI <- DS:SI
+%endmacro
+
+%macro advDS 0
+	mov bx, ds
+	add bx, (SCREEN_WIDTH*SCREEN_HEIGHT)/8/16
+	mov ds, bx
+%endmacro
+
+	restorePlane 0x01
+	advDS
+	restorePlane 0x02
+	advDS
+	restorePlane 0x04
+	advDS
+	restorePlane 0x08
+
+	pop si
+	pop ds
+	pop di
+	pop es
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+
 	ret
 
 ; TODO
@@ -663,8 +779,22 @@ setupVRAMpointer:
 	ret
 
 	;;;; Initialize video library.
+	;
+	; Return with carry set on error
 initvlib:
+	push ax
+
+	; This is a .COM executable, it should have been allocated the
+	; biggest possible chunk of memory available.
+	;
+	; TODO : Check the PSP to see if we have enough
+	;
+	mov ax, ds
+	add ax, 0x1000
+	mov [scr_backup_segment], ax
+
 	call initvlib_common
+	pop ax
 	ret
 
 %include 'vgalib_effects.asm'
