@@ -807,7 +807,6 @@ gameInitDropObjects:
 	mov ax, DROP0_X
 	MOBJ_LIST_FOREACH droplets
 		call mobj_init
-		MOBJ_SETSIZE bp, 16, 16
 		MOBJ_SET_SCR_X bp, ax
 		MOBJ_SET_SCR_Y bp, DROPS_INITIAL_Y
 		MOBJ_SETYVEL(bp, bx)

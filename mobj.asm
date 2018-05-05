@@ -6,8 +6,8 @@
 STRUC mobj ; mobj -> moving object
 	.x: resw 1
 	.y: resw 1
-	.w: resw 1
-	.h: resw 1
+	;.w: resw 1
+	;.h: resw 1
 	.xvel: resw 1
 	.yvel: resw 1
 	.prev_x: resw 1
@@ -26,7 +26,7 @@ ENDSTRUC
 %1:
 %endmacro
 %macro MOBJ_LIST_END 1 ; List name
-%1_end:
+%1_end: resb mobj.size
 %endmacro
 
 ; Load number or objects in list in register
