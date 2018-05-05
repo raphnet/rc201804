@@ -32,8 +32,7 @@ incbin filename
 
 section .bss
 
-image_width_pixels: resw 1
-image_width_bytes: resb 1 ; fits since 640 / 8 = 80
+image_width_bytes: resw 1
 post_row_di_inc: resw 1
 
 scr_backup_segment: resw 1
@@ -381,7 +380,7 @@ fillScreen:
 ;;;; blit_imageXY : Blit an arbitrary size image at coordinate
 ;
 ; ds:si : Pointer to tile data
-; es:di : Video memory base (b800:0)
+; es:di : Video memory base
 ; ax: X coordinate
 ; bx: Y coordinate
 ; cx: Image width (must be multiple of 8)
@@ -403,40 +402,35 @@ blit_imageXY:
 	shift_div_8 ax
 	add di, ax
 
-	; Store original CX value, compute number of bytes
-	mov [image_width_pixels], cx
+	; Convert width to bytes (8 pixels per byte)
 	shift_div_8 cx
-	mov [image_width_bytes], cl
 
 	; Compute the increment to point DI to the next row after a stride
 	mov bx, SCREEN_WIDTH / 8
-	sub bx, cx ; CX still holds width in bytes
 
 	; height already placed in DX by caller. But DX is needed for out instruction.
+	; BP will be the row counter.
 	mov bp, dx
 	mov dx, VGA_SQ_PORT
-	.next_row:
-		mov cl, [image_width_bytes]
-		.lp_in_row:
-			setMapMask_dxpreset 0x1 ; Blue
-			lodsb ; AL = DS:SI
-			es mov [di], al
 
-			setMapMask_dxpreset 0x2 ; Green
-			lodsb ; AL = DS:SI
-			es mov [di], al
+	; DS:SI received in argument points to the image data
+.next_row:
 
-			setMapMask_dxpreset 0x4 ; Red
-			lodsb ; AL = DS:SI
-			es mov [di], al
+%macro BLT_STRIDE 1 ; mask
+		push di
+		push cx ; save width
+		setMapMask_dxpreset %1 ; plane mask
+		rep movsb ; Copy DS:SI to ES:DI
+		pop cx ; restore width for next loop
+		pop di ; Go back to origin for next color
+%endmacro
 
-			setMapMask_dxpreset 0x8 ; Intensity
-			lodsb ; AL = DS:SI
-			es mov [di], al
-			inc di
-			dec cl
-		jnz .lp_in_row
+		BLT_STRIDE 0x01 ; Blue
+		BLT_STRIDE 0x02 ; Green
+		BLT_STRIDE 0x04 ; Red
+		BLT_STRIDE 0x08 ; Intensity
 
+		; Jump to next row
 		add di, bx
 
 		dec bp

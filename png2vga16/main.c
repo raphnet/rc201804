@@ -148,37 +148,38 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 	{
 		case 4:
 			for (y=0; y<h; y++) {
-				unsigned char pixels[8];
+				unsigned char pixels[w];
+				int i;
 
+				// read all 4-bit pixels in this row
+				// and store them in expanded form in pixels[]
+				// in pixels.
 				for (x=0; x<w; x+=8) {
 					unsigned char b;
-					int i,n;
 
-					// read 8 source 4-bit pixels
-					// in pixels.
 					for (i=0; i<8; i++) {
 						b = row_pointers[y][(i+x)/2];
 						b >>= (((i+x)&1)^0x1)*4;
 						b &= 0xf;
-						pixels[i] = b;
-					}
-
-					// Convert them to planar format
-					//
-					// 8R 8G 8B 8I
-					// 8R 8G 8B 8I
-					//
-					for (n=0; n<4; n++) {
-						b = 0;
-						for (i=0; i<8; i++) {
-							b <<= 1;
-							if (pixels[i]&(1<<n)) {
-								b |= 1;
-							}
-						}
-						fwrite(&b, 1, 1, fptr_out);
+						pixels[x+i] = b;
 					}
 				}
+
+				// Output full stride for each plane
+				for (i=0; i<4; i++)
+				{
+					unsigned char b = 0;
+					for (x=0; x<sizeof(pixels); x++) {
+						b <<= 1;
+						if (pixels[x] & (1<<i)) {
+							b |= 1;
+						}
+						if (x && (0==((x+1)%8))) {
+							fwrite(&b, 1, 1, fptr_out);
+						}
+					}
+				}
+
 			}
 			break;
 
