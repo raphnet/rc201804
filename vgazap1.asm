@@ -113,13 +113,29 @@ start:
 
 	mov ax, 16
 	mov bx, 16
+	mov cx, 32
+	mov dx, cx
 	mov si, res_droplet1
-	call blit_tile16XY
+	call blit_imageXY
 
-	mov ax, 32
-	mov bx, 32
+	add ax, 32
+	add bx, 32
 	mov si, res_droplet1
-	call blit_tile16XY
+	call blit_imageXY
+
+	;;;; clearLinesRange test
+	mov al, 12
+	mov bx, 440
+	mov cx, 2
+	call clearLinesRange
+
+	;;; fillRect test
+	mov ax, 0
+	mov bx, 450
+	mov cx, SCREEN_WIDTH
+	mov dx, 2
+	mov byte [draw_color], 14
+	call fillRect
 
 	call mouse_show
 mainloop:
