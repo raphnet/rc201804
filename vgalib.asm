@@ -760,8 +760,54 @@ restorescreen:
 
 	ret
 
-; TODO
+;;;;;;
+;
+; Load and display screen compressed with LZ4
+;
+; SI : Source compressed data
+;
 %macro loadScreen 1
+	push ax
+	push bx
+	push dx
+	push si
+	push di
+
+	; DS:SI : Source compressed data
+	mov si, %1
+
+	; ES:DI : Destination (screen backup)
+	;
+	; Note: LZ4 also reads/copy decompressed data, so I
+	; think decompressing in system memory first, then
+	; copying to VRAM is faster.
+	;
+	push es
+
+		mov bx, [scr_backup_segment]
+		mov es, bx
+		xor di, di
+
+		; Prepare VAG port writes
+		mov dx, VGA_SQ_PORT
+
+		call lz4_decompress
+		advES
+		call lz4_decompress
+		advES
+		call lz4_decompress
+		advES
+		call lz4_decompress
+
+	pop es
+
+	call restorescreen
+
+	pop di
+	pop si
+	pop dx
+	pop bx
+	pop ax
 %endmacro
 
 ; Points ES:DI to the base of video memory.
