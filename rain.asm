@@ -39,10 +39,17 @@ cpu 8086
 %define GAMEOVER_MESSAGE_Y		((SCREEN_HEIGHT/2)+16)
 
 ; Titlescreen text
+%ifdef VGA_VERSION
+%define INSTRUCTION_3L_Y	400
+%define INSTRUCTION_2L_Y	405
+%define INSTRUCTION_X		24
+%define INSTRUCTION_Y_INCR	10
+%else
 %define INSTRUCTION_3L_Y	165
 %define INSTRUCTION_2L_Y	170
 %define INSTRUCTION_X		24
 %define INSTRUCTION_Y_INCR	10
+%endif
 
 ; Difficulty control
 %define DIFF_INITIAL_FRAMECOUNT_TOP	(60*2) ; One drop every 3 second
@@ -145,6 +152,8 @@ mouse_pointer_data: incbin "mousepointer.bin"
 
 %ifdef CGA_VERSION
 titlescreen: incbin "res_cga/title.lz4"
+%elifdef VGA_VERSION
+titlescreen: incbin "res_vga16/title.lz4"
 %else
 titlescreen: incbin "res_tga/title.lz4"
 %endif

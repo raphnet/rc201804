@@ -5,7 +5,7 @@ GRAPHICS_VGA16=$(wildcard vga16_graphics/*.png)
 
 GFX_CGA=$(patsubst cga_graphics/%.png,res_cga/%.cga,$(GRAPHICS_CGA)) res_cga/title.lz4
 GFX_TGA=$(patsubst tga_graphics/%.png,res_tga/%.tga,$(GRAPHICS_TGA)) res_tga/title.lz4
-GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16))
+GFX_VGA16=$(patsubst vga16_graphics/%.png,res_vga16/%.vga16,$(GRAPHICS_VGA16)) res_vga16/title.lz4
 
 cgalib=cgalib.asm cgalib_blit8x8.asm cgalib_blit16x16.asm res_cga/rows.bin cgalib_effects.asm res_cga/font.bin videolib_common.asm
 tgalib=tgalib.asm res_tga/rows.bin res_tga/font.bin tgalib_effects.asm videolib_common.asm
@@ -124,6 +124,9 @@ res_cga/%.lz4: res_cga/%.cga scr/scr2lz4
 
 res_tga/%.lz4: res_tga/%.tga scr/scr2lz4
 	./scr/scr2lz4 $< $@
+
+res_vga16/%.lz4: res_vga16/%.vga16 scr/scr2lz4_vga16
+	./scr/scr2lz4_vga16 $< $@
 
 ### Generated files (included from sources)
 
