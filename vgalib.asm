@@ -407,34 +407,36 @@ blit_imageXY:
 
 	; Compute the increment to point DI to the next row after a stride
 	mov bx, SCREEN_WIDTH / 8
-
-	; height already placed in DX by caller. But DX is needed for out instruction.
-	; BP will be the row counter.
-	mov bp, dx
-	mov dx, VGA_SQ_PORT
+	sub bx, cx
 
 	; DS:SI received in argument points to the image data
-.next_row:
 
-%macro BLT_STRIDE 1 ; mask
-		push di
-		push cx ; save width
-		setMapMask_dxpreset %1 ; plane mask
+	mov bp, dx ; Keep image height in BP for loop
+	mov dx, VGA_SQ_PORT ; Prepare DX for use by setMapMask_dxpreset
+
+%macro BLT_PLANE 1 ; plane mask
+	setMapMask_dxpreset %1
+	push di	; Save origin
+	push bp
+	push cx
+	mov ax, cx ; Save row width in AX for repeated use below
+%%next_row:
+		mov cx, ax
 		rep movsb ; Copy DS:SI to ES:DI
-		pop cx ; restore width for next loop
-		pop di ; Go back to origin for next color
-%endmacro
-
-		BLT_STRIDE 0x01 ; Blue
-		BLT_STRIDE 0x02 ; Green
-		BLT_STRIDE 0x04 ; Red
-		BLT_STRIDE 0x08 ; Intensity
-
 		; Jump to next row
 		add di, bx
+	dec bp
+	jnz %%next_row
 
-		dec bp
-	jnz .next_row
+	pop cx
+	pop bp ; Restore image height for next plane
+	pop di ; Restore DI to origin
+%endmacro
+
+	BLT_PLANE 0x01
+	BLT_PLANE 0x02
+	BLT_PLANE 0x04
+	BLT_PLANE 0x08
 
 	pop bp
 	pop di

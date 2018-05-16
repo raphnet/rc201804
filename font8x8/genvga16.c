@@ -34,18 +34,18 @@ void render(char *bitmap, int val, FILE *out_fptr) {
 		}
     }
 
-	for (y=0; y<8; y++)
-	{
-		for (n=0; n<4; n++) {
-			uint8_t b = 1<<n;
-			uint8_t row = 0;
-			for (x=0; x<8; x++) {
-				row <<= 1;
-				if (tmp[y][x] & b) {
-					row |= 1;
+	for (n=0; n<4; n++) {
+		for (y=0; y<8; y++)
+		{
+				uint8_t b = 1<<n;
+				uint8_t row = 0;
+				for (x=0; x<8; x++) {
+					row <<= 1;
+					if (tmp[y][x] & b) {
+						row |= 1;
+					}
 				}
-			}
-			fwrite(&row, 1, 1, out_fptr);
+				fwrite(&row, 1, 1, out_fptr);
 		}
 	}
 

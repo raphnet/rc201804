@@ -75,6 +75,7 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 	int w,h,depth,color;
 	int ret = 0;
 	int x,y;
+	int i;
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr)
@@ -147,28 +148,28 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 	switch(depth)
 	{
 		case 4:
-			for (y=0; y<h; y++) {
-				unsigned char pixels[w];
-				int i;
-
-				// read all 4-bit pixels in this row
-				// and store them in expanded form in pixels[]
-				// in pixels.
-				for (x=0; x<w; x+=8) {
-					unsigned char b;
-
-					for (i=0; i<8; i++) {
-						b = row_pointers[y][(i+x)/2];
-						b >>= (((i+x)&1)^0x1)*4;
-						b &= 0xf;
-						pixels[x+i] = b;
-					}
-				}
-
-				// Output full stride for each plane
-				for (i=0; i<4; i++)
+			for (i=0; i<4; i++)
+			{
+				for (y=0; y<h; y++)
 				{
+					unsigned char pixels[w];
 					unsigned char b = 0;
+
+					// read all 4-bit pixels in this row
+					// and store them in expanded form in pixels[]
+					// in pixels.
+					for (x=0; x<w; x+=8) {
+						unsigned char b;
+						int j;
+
+						for (j=0; j<8; j++) {
+							b = row_pointers[y][(j+x)/2];
+							b >>= (((j+x)&1)^0x1)*4;
+							b &= 0xf;
+							pixels[x+j] = b;
+						}
+					}
+
 					for (x=0; x<sizeof(pixels); x++) {
 						b <<= 1;
 						if (pixels[x] & (1<<i)) {
@@ -179,7 +180,6 @@ int convertPNG(FILE *fptr_in, FILE *fptr_out, int cga_compat)
 						}
 					}
 				}
-
 			}
 			break;
 

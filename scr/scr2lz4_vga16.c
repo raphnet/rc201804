@@ -85,9 +85,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	for (y=0; y<yres; y++) {
-		int res;
-		for (i=0; i<4; i++) {
+	for (i=0; i<4; i++) {
+		for (y=0; y<yres; y++) {
+			int res;
 			//printf("Line %d, plane %d, strd: %d\n", y, i, stride);
 			// Read one scanline in one color
 			res = fread(inputbuf + i*plane_size + y * stride, stride, 1, fptr_in);
