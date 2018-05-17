@@ -13,6 +13,7 @@ STRUC mobj ; mobj -> moving object
 	.prev_x: resw 1
 	.prev_y: resw 1
 	.enabled: resb 1
+	.acc_count: resb 1
 	.size:
 ENDSTRUC
 
