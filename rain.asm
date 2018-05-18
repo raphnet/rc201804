@@ -59,12 +59,16 @@ cpu 8086
 %define DIFF_MAX_BROKEN_KEYS		3
 %define DIFF_INCREASE_INITIAL_VELOCITY_EVERY	5 ; every 5 ticks
 ; The initial limit of simultaneous drops on screen
-%define DIFF_INITIAL_MAX_ACTIVE_DROPS	3
+%define DIFF_INITIAL_MAX_ACTIVE_DROPS	1
 ; Maximum simultaneous drops on screen
 %define DIFF_MAXIMUM_ACTIVE_DROPS	6
+%define ACCELERATION_FRAME_PRESCALE	8 ; The lower, the more it accelerates
 
 ;%define NO_ACCELERATION
-%define NO_LOOSING
+;%define NO_LOOSING
+%define USE_RANDOM_DROP_SCHEDULER
+%define RANDOM_DROP_SCHEDULER_TOPVAL	90 ; The lower, higher frequency
+%define USE_FIXED_SEED	7900
 
 ; Various values used with glp_end for glp_run return value.
 %define RETVAL_WON			0
@@ -481,7 +485,14 @@ gameRedrawMovedObjects:
 		doBlitDroplet
 
 %ifndef NO_ACCELERATION
+		mov al, [bp + mobj.acc_count]
+		inc al
+		cmp al, ACCELERATION_FRAME_PRESCALE
+		jl .not_yet
+		xor al,al
 		inc word [bp + mobj.yvel]
+.not_yet:
+		mov [bp + mobj.acc_count], al
 %endif
 .skip:
 	MOBJ_NEXT
@@ -642,6 +653,15 @@ gameEventObjectHit:
 gameDropSchedulerTick:
 	push ax
 	push bx
+
+%ifdef USE_RANDOM_DROP_SCHEDULER
+	mov al, 0
+	mov ah, RANDOM_DROP_SCHEDULER_TOPVAL
+	call getRandom8
+	cmp al, 1
+	je .time_for_newdrop
+	jmp game_drop_scheduler_tick_done
+%endif
 
 	mov ax, [dropscheduler_framecount]
 	test ax, 0xffff
@@ -887,6 +907,11 @@ gamePrepareNew:
 	call score_clear
 
 	call gameDrawHighScore
+
+%ifdef USE_FIXED_SEED
+	mov ax, USE_FIXED_SEED
+	call setRandomSeed
+%endif
 
 	pop bp
 	pop si
