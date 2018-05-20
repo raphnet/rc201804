@@ -18,6 +18,7 @@ messageScreen_start:
 	push cx
 	push dx
 
+	call mouse_hide
 	call savescreen
 	mov cx, effect_height(SCREEN_HEIGHT)
 	call eff_checkboard
@@ -39,6 +40,7 @@ messageScreen_start:
 	mov cx, MSGBOX_BORDER_THICKNESS
 	mov al, 3
 	call clearLinesRange
+	call mouse_show
 
 	pop dx
 	pop cx
@@ -60,8 +62,9 @@ messageScreen_end:
 ;	mov cx, 32
 ;	mov ax, 0
 ;	call clearLinesRange
-
+	call mouse_hide
 	call restorescreen
+	call mouse_show
 
 	pop cx
 	pop bx

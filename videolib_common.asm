@@ -580,6 +580,8 @@ askYesNoQuestion:
 	push bx
 	push dx
 
+	call mouse_hide
+
 	call drawString
 	push bx
 	push cx
@@ -598,6 +600,7 @@ askYesNoQuestion:
 		call drawString
 	pop dx
 
+	call mouse_show
 	call flushkeyboard
 
 	push ax

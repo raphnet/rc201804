@@ -200,6 +200,7 @@ start:
 	mov cx, MOUSE_POINTER_HOTSPOT_Y
 	call mouse_setpointer
 	call mouse_show
+	call mouse_hide
 .mouse_unavailable:
 %endif
 
@@ -237,6 +238,7 @@ start:
 	call drawString
 .instructions_done:
 
+	call mouse_show
 	call waitTriggerOrMouseClick
 	cmp ax, 0x0001
 	je .play_with_mouse
@@ -330,6 +332,7 @@ onESCpressed:
 	getStrDX str_end_game
 	call messageScreen_drawText_prepare
 	mov cx, 0 ; default no
+	call mouse_show
 	call askYesNoQuestion ; CF set if ESC was pressed. CX = 0 for no
 	jc .ask_again
 	call messageScreen_end
