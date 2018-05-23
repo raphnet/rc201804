@@ -320,6 +320,46 @@ fillRect:
 	ret
 
 
+	;;;;;; Clear (fill with color 0) a 32x32 square
+	; AX : X
+	; BX : Y
+	; ES : Videomem base
+	;
+	;
+	; Note: Byte-aligned squares only
+clr32x32:
+	push ax
+	push bx
+	push cx
+	push dx
+	push di
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	shift_div_8 ax
+	add di, ax
+
+	setMapMask 0xF; all planes
+
+	mov al, 0x00
+	mov ah, 4 ; Scanline (4 bytes / 32 bits)
+	mov bx, SCREEN_WIDTH / 8 - 4
+%rep 32
+	mov cl, ah
+	rep stosb
+	add di, bx
+%endrep
+
+	pop di
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+
+
 	; es:di : Video memory base (as set by setupVRAMpointer)
 	; al : Color
 fillScreen:
