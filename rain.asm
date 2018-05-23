@@ -78,13 +78,7 @@ cpu 8086
 %ifdef VGA_VERSION
 	%macro doBlitDroplet 0-1 res_droplet1
 		mov si, %1
-		push cx
-		push dx
-		mov dx, 32
-		mov cx, dx
-		call blit_imageXY
-		pop dx
-		pop cx
+		call blit_tile32XY
 	%endmacro
 	%define getKeyTile getTile64
 	%macro eraseDroplet 0
