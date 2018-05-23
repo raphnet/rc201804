@@ -76,7 +76,8 @@ cpu 8086
 %define RETVAL_USER_QUIT	2
 
 %ifdef VGA_VERSION
-	%macro doBlitDroplet 0
+	%macro doBlitDroplet 0-1 res_droplet1
+		mov si, %1
 		push cx
 		push dx
 		mov dx, 32
@@ -86,9 +87,19 @@ cpu 8086
 		pop cx
 	%endmacro
 	%define getKeyTile getTile64
+	%macro eraseDroplet 0
+		call clr32x32
+	%endmacro
 %else
-	%define doBlitDroplet call blit_tile16XY
+	%macro doBlitDroplet 0-1 res_droplet1
+		mov si, %1
+		call blit_tile16XY
+	%endmacro
 	%define getKeyTile getTile32
+	%macro eraseDroplet 0
+		mov si, res_black_droplet
+		call blit_tile16XY
+	%endmacro
 %endif
 
 ;;;; Make sure to jump to main first before includes
@@ -360,13 +371,12 @@ onTriggerPulled:
 	jnz .miss ; All objects are black. No light should be seen.
 
 	; Now draw each on in white, checking for light.
-	mov si, res_highlighted_droplet
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		; Use previous position as it has not yet been drawn at the new
 		; position that was computed in the previous frame
 		MOBJ_GET_PREV_SCR_X ax, bp
 		MOBJ_GET_PREV_SCR_Y bx, bp
-		doBlitDroplet
+		doBlitDroplet res_highlighted_droplet
 		call detectLight
 		jnz .hit ; Only one object can be hit. So it's fine to exit the loop
 	MOBJ_NEXT
@@ -459,11 +469,10 @@ gameDrawDropObjects:
 	; Draw black over all drop objects
 	;
 gameEraseDropObjects:
-	mov si, res_black_droplet
 	MOBJ_LIST_FOREACH_ENABLED droplets
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		doBlitDroplet
+		eraseDroplet
 	MOBJ_NEXT
 	ret
 
@@ -480,8 +489,7 @@ gameRedrawMovedObjects:
 
 		MOBJ_GET_PREV_SCR_X ax, bp
 		MOBJ_GET_PREV_SCR_Y bx, bp
-		mov si, res_black_droplet
-		doBlitDroplet
+		eraseDroplet
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
 		mov si, res_droplet1
@@ -517,8 +525,7 @@ gameEventObjectReachedFloor:
 	; Draw black over it
 	MOBJ_GET_PREV_SCR_X ax, bp
 	MOBJ_GET_PREV_SCR_Y bx, bp
-	mov si, res_black_droplet
-	doBlitDroplet
+	eraseDroplet
 
 	; Make sure the previous position next time this object is enabled
 	; and drawn is not below the keyboard!
@@ -630,13 +637,12 @@ gameEventObjectHit:
 	MOBJ_DISABLE bp
 
 	; Draw black over it
-	mov si, res_black_droplet
 	MOBJ_GET_PREV_SCR_X ax, bp
 	MOBJ_GET_PREV_SCR_Y bx, bp
-	doBlitDroplet
+	eraseDroplet
 	MOBJ_GET_SCR_X ax, bp
 	MOBJ_GET_SCR_Y bx, bp
-	doBlitDroplet
+	eraseDroplet
 
 	; TODO Score? Count? Increase difficulty?
 	call score_add100
