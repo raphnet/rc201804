@@ -514,6 +514,23 @@ bt16x_done:
 	pop ax
 %endmacro
 
+;;;; blit_tile32
+; ds:si : Pointer to tile data
+; es:di : Video memory base (b800:0)
+; ax: X coordinate (in pixels)
+; bx: Y coordinate (in pixels)
+;
+blit_tile32XY:
+	push cx
+	push dx
+	mov cx, 32
+	mov dx, 32
+	call blit_imageXY
+	pop dx
+	pop cx
+	ret
+
+
 	;;;; get pixel for TGA video memory
 	;; es:di : Video memory base
 	;; AX : X coordinate

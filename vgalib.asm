@@ -533,6 +533,69 @@ blit_tile16XY:
 	pop cx
 	ret
 
+;;;; blit_tile32XY : Blit a 32x32 tile to a destination coordinate
+;
+; ds:si : Pointer to tile data
+; es:di : Video memory base
+; ax: X coordinate (in pixels) (byte-aligned)
+; bx: Y coordinate (in pixels)
+;
+blit_tile32XY:
+	push ax
+	push bx
+	push cx
+	push dx
+	push si
+	push di
+	push bp
+
+	; Skip to Y row
+	shl bx, 1
+	add di, [vgarows+bx]
+	; Skip to X position in row : di += ax / 8
+	shift_div_8 ax
+	add di, ax
+
+	; Prepare the increment to point DI to the next row after a stride
+	mov bx, SCREEN_WIDTH / 8 - 4
+	mov bp, di ; Save the origin
+
+	; DS:SI received in argument points to the image data
+
+	mov dx, VGA_SQ_PORT ; Prepare DX for use by setMapMask_dxpreset
+	mov al, VGA_SQ_MAP_MASK_IDX
+	out dx, al
+	inc dx ; point to register
+
+%macro BLT_PLANE_4BYTES 1 ; plane mask
+	; Set map mask
+	mov al, %1
+	out dx, al
+
+%rep 32
+	mov cl, 4
+	rep movsb ; Copy DS:SI to ES:DI
+	; Jump to next row
+	add di, bx
+%endrep
+
+	mov di, bp
+%endmacro
+
+	BLT_PLANE_4BYTES 0x01
+	BLT_PLANE_4BYTES 0x02
+	BLT_PLANE_4BYTES 0x04
+	BLT_PLANE_4BYTES 0x08
+
+	pop bp
+	pop di
+	pop si
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+
 	;;;;;; Get the color of a single pixel
 	;
 	; Args:

@@ -93,22 +93,6 @@ _phl_lp:
 	pop ax
 	ret
 
-;;;; blit_tile
-; ds:si : Pointer to tile data
-; es:di : Video memory base (b800:0)
-; ax: X coordinate (in pixels)
-; bx: Y coordinate (in pixels)
-;
-blit_tile32XY:
-	push cx
-	push dx
-	mov cx, 32
-	mov dx, 32
-	call blit_imageXY
-	pop dx
-	pop cx
-	ret
-
 
 	;;;;; Draw box (not filed)
 	; es:di : Video memory base
