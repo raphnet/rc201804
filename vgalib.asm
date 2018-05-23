@@ -453,22 +453,29 @@ blit_imageXY:
 
 	mov bp, dx ; Keep image height in BP for loop
 	mov dx, VGA_SQ_PORT ; Prepare DX for use by setMapMask_dxpreset
+	mov al, VGA_SQ_MAP_MASK_IDX
+	out dx, al
+	inc dx ; point to register
+
+	; Save row width in AH for repeated use below
+	mov ah, cl
+;	xor ch, ch ; No need, CX is < 80
 
 %macro BLT_PLANE 1 ; plane mask
-	setMapMask_dxpreset %1
+	; Set map mask
+	mov al, %1
+	out dx, al
+
 	push di	; Save origin
 	push bp
-	push cx
-	mov ax, cx ; Save row width in AX for repeated use below
 %%next_row:
-		mov cx, ax
+		mov cl, ah
 		rep movsb ; Copy DS:SI to ES:DI
 		; Jump to next row
 		add di, bx
 	dec bp
 	jnz %%next_row
 
-	pop cx
 	pop bp ; Restore image height for next plane
 	pop di ; Restore DI to origin
 %endmacro
