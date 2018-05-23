@@ -179,6 +179,14 @@ detectLightMouse:
 	; cx : X
 	; dx : Y
 
+	; Virtual screen is 640x200. Divide X by 2
+%ifdef CGA_VERSION
+	shr cx, 1
+%endif
+%ifdef TGA_VERSION
+	shr cx, 1
+%endif
+
 	; fake vertical timing
 	mov word [zapper_last_start], dx
 	mov word [zapper_last_count], 200
