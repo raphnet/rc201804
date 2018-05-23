@@ -198,6 +198,12 @@ start:
 
 	call setupVRAMpointer
 
+	; Initialize the score variable to 0...
+	call score_clear
+	; and set the high score to 0 too.
+	; Note: Would be nice to load the score
+	call score_copyToHigh
+
 .title:
 
 %ifdef MOUSE_SUPPORT
@@ -409,7 +415,7 @@ onVerticalRetrace:
 	call mouse_hide
 	call gameRedrawMovedObjects
 	call gameAnimateBreakingKeys
-	call gameDrawScore
+	;call gameDrawScore
 	call mouse_show
 
 	;; Now compute positions for next frame and run game logic
@@ -492,7 +498,6 @@ gameRedrawMovedObjects:
 		eraseDroplet
 		MOBJ_GET_SCR_X ax, bp
 		MOBJ_GET_SCR_Y bx, bp
-		mov si, res_droplet1
 		doBlitDroplet
 
 %ifndef NO_ACCELERATION
@@ -553,6 +558,7 @@ gameEventObjectReachedFloor:
 	; Broken key counter updated once animation ends
 
 	;call score_add100
+	;call gameDrawScore
 	;call gameIncreaseDifficultyTick
 
 .ignore:
@@ -646,6 +652,9 @@ gameEventObjectHit:
 
 	; TODO Score? Count? Increase difficulty?
 	call score_add100
+	call mouse_hide
+	call gameDrawScore
+	call mouse_show
 
 	call gameIncreaseDifficultyTick
 
@@ -912,9 +921,9 @@ gamePrepareNew:
 	mov bx, [drop_initial_velocity]
 	call gameInitDropObjects
 
-	; Zero the score
+	; Zero the score, draw it
 	call score_clear
-
+	call gameDrawScore
 	call gameDrawHighScore
 
 %ifdef USE_FIXED_SEED
