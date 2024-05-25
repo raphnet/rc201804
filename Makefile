@@ -34,7 +34,7 @@ vgazap1.com: vgazap1.asm zapper.asm $(vga16lib) $(GFX_VGA16) $(MOUSE)
 
 # RainZapper : Tandy Version
 rain.com: $(RAIN_DEPS) $(tgalib) $(GFX_TGA)
-	$(NASM) $< -fbin -o $@ -l $@.lst -DMOUSE_SUPPORT
+	$(NASM) $< -fbin -o $@ -l $@.lst -DTGA_VERSION -DMOUSE_SUPPORT
 	ls -l $@
 
 # RainZapper : VGA Version
