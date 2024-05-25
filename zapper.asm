@@ -28,6 +28,7 @@ cpu 8086
 
 	; Trigger from left mouse button (mouse mode)
 %%mouse:
+	mov bx, 0
 	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
 	int 33h
 	xor ax, 0xffff ; Invert logic (be active low like joystick)
