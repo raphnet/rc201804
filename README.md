@@ -37,6 +37,10 @@ If all goes well, the following files will be generated:
 
 * rainvga.com - VGA Version of the RainZapper mini-game (as of now, still a work in progress)
 
+### CGA only
+
+* raincga.com - CGA Version of the RainZapper mini-game
+
 ## Development
 
 ### A Very quick guide to the source

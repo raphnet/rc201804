@@ -1,0 +1,7 @@
+Version 1.1 - 2024-05-25
+    - Add simple sound effects
+	- High score is now remembered (RAIN.SAV)
+	- Mouse support bug fixes
+
+Version 1.0 - 2018
+	- Initial relaese

@@ -112,7 +112,11 @@ jmp start
 %endif
 
 %include 'random.asm'
+%include 'pcspkr.asm'
+%include 'sound.asm'
+
 %define ZAPPER_SUPPORT
+%define CALL_PCSKPR_FRAME
 %include 'gameloop.asm'
 %include 'mobj.asm'
 %include 'score.asm'
@@ -203,6 +207,8 @@ start:
 	call score_copyToHigh
 
 	call loadBestScore
+
+	call pcspkr_init
 
 .title:
 
@@ -344,6 +350,8 @@ onESCpressed:
 	push cx
 	push dx
 
+	call pcspkr_tone_off
+
 	call messageScreen_start
 .ask_again:
 	getStrDX str_end_game
@@ -392,12 +400,16 @@ onTriggerPulled:
 .hit:
 	call gameEventObjectHit
 
+	call sndeffect_shoot_hit
+
 	; Force redraw of all objects
 	call gameDrawDropObjects
 	call mouse_show
 	ret
 
 .miss:
+	call sndeffect_shoot_miss
+
 	call gameDrawDropObjects
 	call mouse_show
 	ret
@@ -554,6 +566,8 @@ gameEventObjectReachedFloor:
 
 	; Start the breaking animation
 	mov byte [keyconditions + bx], 1
+
+	call sndeffect_missed
 
 	; Broken key counter updated once animation ends
 
@@ -724,6 +738,7 @@ count_inactive_drops:
 	jle game_drop_scheduler_tick_done
 
 
+	call sndeffect_newdrop
 	; Otherwise, select a new one at random
 spawn_new_drop:
 	mov al, 0
@@ -742,6 +757,8 @@ spawn_new_drop:
 .next:
 		dec ax
 	MOBJ_NEXT
+
+
 game_drop_scheduler_tick_done:
 	pop bx
 	pop ax
@@ -951,6 +968,7 @@ gamePrepareNew:
 waitTriggerOrMouseClick:
 	call flushkeyboard
 .loop:
+	call pcspkr_frame
 	call checkESCpressed
 	jc .escape
 
@@ -1022,6 +1040,7 @@ exit:
 	call mouse_hide
 	call flushkeyboard
 	call restorevidmode
+	call pcspkr_shutdown
 
 	call printBanner
 

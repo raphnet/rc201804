@@ -121,7 +121,7 @@ _lang_en: ; English language strings
 
 	defineString str_new_high_score, "New high score!"
 
-	defineString str_thanks1, "Rain Zapper v1.0"
+	defineString str_thanks1, "Rain Zapper v1.1"
 	defineString str_thanks2, "Copyright (C) 2018 Raphael Assenat"
 	defineString str_thanks3, "Made for RC2018/04"
 	defineString str_thanks4, ""
@@ -154,7 +154,7 @@ _lang_fr: ; French language strings
 
 	defineString str_new_high_score, "Nouveau record!"
 
-	defineString str_thanks1, "Rain Zapper v1.0"
+	defineString str_thanks1, "Rain Zapper v1.1"
 	defineString str_thanks2, "Copyright (C) 2018 Raphael Assenat"
 	defineString str_thanks3, "Fait pour RC2018/04"
 	defineString str_thanks4, ""

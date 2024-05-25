@@ -13,7 +13,7 @@ vga16lib=vgalib.asm vgalib_effects.asm videolib_common.asm res_vga16/font.bin vg
 MOUSE=mouse.asm mousepointer.bin
 
 # The first dependency must be rain.asm. Other files are there to trigger recompile when modified. (they are all included by rain.asm)
-RAIN_DEPS=rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm sinlut.bin messagescreen.asm lang.asm $(MOUSE)
+RAIN_DEPS=rain.asm zapper.asm gameloop.asm mobj.asm score.asm random.asm sinlut.bin messagescreen.asm lang.asm pcspkr.asm sound.asm save.asm strutil.asm $(MOUSE)
 
 all: zapdemo1.com zapdemo2.com vgazap1.com rain.com rainvga.com raincga.com
 

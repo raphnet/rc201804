@@ -87,6 +87,9 @@ glp_run:
 	test al,ah
 	jz .notInRetrace
 
+%ifdef CALL_PCSKPR_FRAME
+	call pcspkr_frame
+%endif
 
 %ifdef ZAPPER_SUPPORT
 	jmp_if_trigger_pulled .pulled
