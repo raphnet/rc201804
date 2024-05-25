@@ -100,6 +100,8 @@ cpu 8086
 section .text
 jmp start
 
+%include 'strutil.asm'
+
 ;;;; Includes
 %ifdef VGA_VERSION
 %include 'vgalib.asm'
@@ -115,6 +117,7 @@ jmp start
 %include 'mobj.asm'
 %include 'score.asm'
 %include 'messagescreen.asm'
+%include 'save.asm'
 
 section .bss
 
@@ -132,6 +135,7 @@ num_broken_keys: resb 1
 
 section .data
 
+rec_filename: db "RAIN.SAV",0
 mouse_available: db 0
 
 ; Symbols required to reference sprites by their ID.
@@ -194,9 +198,11 @@ start:
 
 	; Initialize the score variable to 0...
 	call score_clear
-	; and set the high score to 0 too.
-	; Note: Would be nice to load the score
+	; and set the high score to 0 too, in case
+	; loading fails.
 	call score_copyToHigh
+
+	call loadBestScore
 
 .title:
 
@@ -982,31 +988,6 @@ waitTriggerOrMouseClick:
 	ret
 
 ;
-; Output a string using int 10h
-;
-printStr:
-	push ax
-	push bx
-	push cx
-.lp:
-	mov bx, dx
-	mov al, [bx]
-	and al,al
-	jz .done
-
-	mov ah, 0eh
-	mov bh, 0
-	mov cx, 1
-	int 10h
-	inc dx
-	jmp .lp
-.done:
-	pop cx
-	pop bx
-	pop ax
-	ret
-
-;
 ;
 ;
 printBanner:
@@ -1014,6 +995,7 @@ printBanner:
 	push bx
 	push dx
 
+	call saveBestScore
 
 %assign i 1
 %rep NUM_STR_THANKS
@@ -1028,7 +1010,6 @@ printBanner:
 	call printStr
 %assign i i+1
 %endrep
-
 
 	pop dx
 	pop bx
