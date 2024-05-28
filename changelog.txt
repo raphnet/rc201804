@@ -1,7 +1,10 @@
-Version 1.1 - 2024-05-25
+Version 3 - 2024-05-28
     - Add simple sound effects
 	- High score is now remembered (RAIN.SAV)
 	- Mouse support bug fixes
 
-Version 1.0 - 2018
-	- Initial relaese
+Version 2 - 2018-05-27
+	- Added VGA and CGA versions
+
+Version 1 - 2018-04-30
+	- Initial release
