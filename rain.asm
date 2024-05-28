@@ -967,6 +967,15 @@ gamePrepareNew:
 	; Returns 2 in AX if ESC was pressed
 waitTriggerOrMouseClick:
 	call flushkeyboard
+
+
+	jmp_mbyte_false [mouse_enabled], .loop
+
+	; reset button click count before loop
+	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
+	mov bx, 0 ; left button
+	int 33h
+
 .loop:
 	call pcspkr_frame
 	call checkESCpressed
@@ -985,8 +994,9 @@ waitTriggerOrMouseClick:
 	; Check the mouse button ourselves
 	jmp_mbyte_false [mouse_enabled], .loop
 	mov ax, MOUSEFN_QUERY_BTN_COUNTERS
-	int 33h
-	and ax, 0x0001
+	mov bx, 0 ; left button
+	int 33h ; returns count in BX
+	and bx, bx
 	jnz .click
 
 	jmp .loop
